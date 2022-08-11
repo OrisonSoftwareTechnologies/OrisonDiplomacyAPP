@@ -1,0 +1,829 @@
+﻿@page "/SparePartsRegister"
+@using Syncfusion.Blazor.Buttons;
+@using Syncfusion.Blazor.Grids;
+@using Syncfusion.Blazor.Popups;
+@using Syncfusion.Blazor.Cards
+@using AdminDiplomacyAPP.Entities
+@using Syncfusion.Blazor.Navigations
+@using Syncfusion.Blazor.Inputs;
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Data
+@using Syncfusion.Blazor.Spinner
+@using Syncfusion.Blazor.Calendars
+@using TooltipPosition = Syncfusion.Blazor.Popups.Position
+
+@inject AdminDiplomacyAPP.Contract.IItemMasterManager _ItemMasterManager
+@inject AdminDiplomacyAPP.Contract.IOrderingCartManager _OrderingCartManager
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+@inject NavigationManager _nav;
+<head>
+    <link href="css/OrisonSyncfusionStyles.css" rel="stylesheet" />
+    <link href="css/StyleSheet.css" rel="stylesheet" />
+</head>
+<style>
+    .content {
+        vertical-align: central;
+        padding-top: 400px;
+        padding-bottom: 100px;
+        padding-left: 50px;
+        padding-right: 50px;
+        position: center;
+    }
+
+    .e-btnss {
+        width: 8em;
+        height: 30px;
+        display: inline;
+        background-position: center bottom;
+        font-size: 16px;
+        vertical-align: middle;
+        color: black;
+    }
+</style>
+
+<div class="row" style=" border-bottom: solid 1px #000; padding-bottom: 8px; padding-top: 4px;">
+    <div class="col-md-4">
+
+        @if (mode == 0)
+        {
+            <SfButton IconCss="Icon add" CssClass="e-btn" @onclick="@AddMaster" Content="New" />
+
+        }
+        else
+        {
+            <SfButton IconCss="Icon add" CssClass="e-btn" @onclick="@AddChild" Content="New" />
+            <SfButton IconCss="Icon back" CssClass="e-btn" @onclick="@GoToMaster" Content="Back" />
+        }
+    </div>
+
+    <div class="col-md-4" style="text-align:center;">
+
+
+        <label style="color:red;font-size:medium">@message</label>
+
+
+    </div>
+
+    <div class="col-md-4" style="text-align:right;">
+        <label style="color: #014164; font-size: large; display: flex; justify-content: right; font-weight: bold; ">@Heading</label>
+    </div>
+</div>
+@if (mode == 0)
+{
+    <div class="row">
+        <div class="control-section col-lg-12 card-control-section tile_layout">
+            <div class="row e-card-layout">
+
+                @if (Isload == true)
+                {
+                    <div id="container">
+                        <div class="row">
+                            <div spin-row w-100>
+                                <div class="spin-row">
+                                    <div class="content">
+                                        <SfSpinner Size="40" Label="" Type="SpinnerType.Bootstrap4" Visible="Isload"></SfSpinner>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+
+                else
+                {
+                    @foreach (DtItemMaster card in dtItemMasters)
+                    {
+
+                        if (card.Parent == 0)
+                        {
+
+                            string spmsUrl = string.Concat(url, @card.FileName);
+                            <div class="col-lg-2 col-md-2 col-sm-6" style="padding: 15px;">
+                                <div id="card_sample_1" style="background-color: #fff; border: 2px solid #379dce; border-radius: 3px; box-shadow: none; color: #212529; outline: none;">
+                                    <SfCard @onclick="@(e => Master_Click(card))">
+                                        <img src="@spmsUrl" width="173" height="150" />
+                                        <CardHeader Title="@card.ItemName" />
+                                    </SfCard>
+                                </div>
+                            </div>
+                        }
+                    }
+                }
+            </div>
+        </div>
+    </div>
+}
+else if (mode == 1)
+{
+
+    <div class="form-row pt-2">
+        <div class="col-md-3">
+            <div style="border: 2px solid #5d6296;height:350px;width:100%;">
+                <img src="@MasterUrl" width="100%" height="350px" />
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="form-row pt-5">
+                <div class="col-md-3" style="text-align:left;">
+                    <label style="font-size:32px;">@ChildItem.ItemName</label>
+                </div>
+
+
+                <div class="col-md-6">
+
+                    <SfComboBox TValue="string" EnableVirtualization="true" Query="@query" TItem="dtVoucher" AllowCustom="true" Enabled="@true" Placeholder="JobNo:" @bind-Value="@orderitem.JobNo" CssClass="e-multi-column" AllowFiltering="true" DataSource="comboJob" PopupHeight="300px" PopupWidth="300px">
+                        <ComboBoxEvents TItem="dtVoucher" TValue="string" ValueChange="@ValueChangeHandler4"></ComboBoxEvents>
+                        <ComboBoxTemplates TItem="dtVoucher">
+                            <HeaderTemplate>
+                                <table><tr><th style="width:25px">Job No</th></tr></table>@*<th style="width:200px">Job ID</th>*@
+                            </HeaderTemplate>
+                            <ItemTemplate>
+                                <table>
+                                    <tbody>
+                                        <tr>
+                                            <td style="width:25px">@((context as dtVoucher).VNo)</td>
+                                            @*<td style="width:200px">@((context as dtVoucher).ID)</td>*@
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </ItemTemplate>
+                        </ComboBoxTemplates>
+                        <ComboBoxFieldSettings Text="VNo" Value="VNo"></ComboBoxFieldSettings>
+                    </SfComboBox>
+                </div>
+
+                <div class="col-md-3" style="text-align:right;">
+                    <label style="font-size:32px;">@ChildItem.ItemNameAr</label>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+
+    <div class="form-row">
+        <div class="control-section col-lg-12 card-control-section tile_layout">
+            <div class="row e-card-layout">
+                @if (this.dtItemMasters.Count == 0)
+                {
+                    <div class="e-error">
+                        <div class="e-error-content">No results found. Please try a different search.</div>
+                    </div>
+                }
+                else
+                {
+                    int i = 0;
+                    @foreach (DtItemMaster card in dtItemMasters)
+                    {
+                        string spmsUrl = string.Concat(url, @card.FileName);
+                        if (ChildItem.ID == dtItemMasters[i].Parent)
+                        {
+                            card.Path = dtItemMasters[i].Path;
+                            <div class="col-lg-2 col-md-2 col-sm-6" style="padding: 15px;">
+                                <div id="card_sample_1" style="background-color: #fff;height:100%; border: 2px solid #379dce; border-radius: 3px; box-shadow: none; color: #212529; outline: none;">
+                                    <SfCard @onclick="@(e => Child_ClickOrder(card))" CssClass="e-childCard">
+                                        <div>
+                                            <img src="@spmsUrl" width="173" height="150" />
+                                        </div>
+                                        <div>
+                                            <SfTooltip Position="@Position" Content="@card.ItemName">
+                                                <CardHeader Title="@card.ItemName" />
+                                            </SfTooltip>
+                                        </div>
+                                        <di>
+                                            <SfTooltip Position="@Position" Content="@card.ItemNameAr">
+                                                <CardHeader Title="@card.ItemNameAr" />
+                                            </SfTooltip>
+                                        </di>
+
+                                    </SfCard>
+                                </div>
+
+                            </div>
+
+
+                        }
+                        i++;
+                    }
+                }
+
+            </div>
+        </div>
+    </div>
+    <SfDialog Width="650px" ShowCloseIcon="true" IsModal="true" @bind-Visible="@IsVisible">
+        <DialogTemplates>
+            <Header>
+                <div class="col-md-4">
+                    <label style="color:red;font-size:medium">@ormessage</label>
+                    </div>
+                    <div class="col-md-4">
+
+                        <BSAlert Color="Color.Success" @bind-IsOpen="@IsOrderSave" AutoHide="true">
+                            Successfully Saved  <a><i class="fa fa-check" aria-hidden="true"></i></a>
+                        </BSAlert>
+                    </div>
+                    <div class="col-md-4">
+                        <BSAlert Color="Color.Success" @bind-IsOpen="@IsCartSave" AutoHide="true">
+                            Your Items are Carted Successfully<a><i class="fa fa-check" aria-hidden="true"></i></a>
+                        </BSAlert>
+                    </div>
+
+
+            </Header>
+            <Content>
+                <div class="form-row pt-2">
+                    <div class="col-md-6">
+                        <img src="@ChildUrl" width="250" height="150" align="left" />
+                    </div>
+                    <div class="col-md-3">
+                        <label style="font-size:20px;text-align:center">@CItem.ItemName</label>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label style="font-size:20px;text-align:center">@CItem.ItemNameAr</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="label">Orientation:</label>
+                        @*<SfComboBox DataSource="@ore" Placeholder="Select" TValue="string" TItem="string" @bind-Value="orderitem.Orientation">
+                                <ComboBoxEvents TValue="string" TItem="string"></ComboBoxEvents>
+                            </SfComboBox>*@
+
+                        <SfMultiSelect TValue="string[]" TItem="string" Placeholder="Select" DataSource="@ore" Mode="VisualMode.CheckBox" ShowSelectAll="@ShowSelectAllCheckBox" EnableSelectionOrder="@EnableSelectionOrders" ShowDropDownIcon="@EnableDropDownIcon">
+                            <MultiSelectEvents TItem="string" TValue="string[]" ValueChange="@onChangeOrientation"></MultiSelectEvents>
+                            <MultiSelectFieldSettings Text="Name" Value="Id"></MultiSelectFieldSettings>
+                        </SfMultiSelect>
+                        @*<SfMultiSelect ID="txtGM1" @bind-Value="@ValueGM" TValue="string[]" TItem="clsGradeMaster" Mode="VisualMode.CheckBox" ShowSelectAll="@ShowSelectAllCheckBox" EnableSelectionOrder="@EnableSelectionOrders" ShowDropDownIcon="@EnableDropDownIcon" Placeholder="Select" DataSource="@GclassList" CssClass="@ValidCss1">
+                                <MultiSelectEvents TItem="clsGradeMaster" TValue="string[]" ValueChange="@onChangeClassGM"></MultiSelectEvents>
+                                <MultiSelectFieldSettings Text="Class" Value="Class"></MultiSelectFieldSettings>
+                            </SfMultiSelect>*@
+
+
+
+                    </div>
+                    <div class="col-md-6">
+                        <label class="label">Quantity:</label>
+                        <SfNumericTextBox TValue="int" @bind-Value="@NumericValue" Min="1"></SfNumericTextBox>
+
+                    </div>
+                </div>
+                @*<div class="row">
+                        <div class="col-md-6">
+                            <label class="label">Staff:</label>
+                            <SfComboBox TValue="string" TItem="dtAccounts" Placeholder="Select Staff" DataSource="comboStaff" @bind-Value="@orderitem.Staff">
+                                <ComboBoxEvents TValue="string" ValueChange="ValueChangeHandler1" TItem="dtAccounts"></ComboBoxEvents>
+                                <ComboBoxFieldSettings Text="AccountName" Value="AccountName"></ComboBoxFieldSettings>
+                            </SfComboBox>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="label">Department:</label>
+                            <SfComboBox TValue="string" TItem="dtMastermisc" Placeholder="Select Department" DataSource="comboDepartment" @bind-Value="@orderitem.Department">
+                                <ComboBoxEvents TValue="string" ValueChange="ValueChangeHandler3" TItem="dtMastermisc"></ComboBoxEvents>
+                                <ComboBoxFieldSettings Text="Description" Value="Description"></ComboBoxFieldSettings>
+                            </SfComboBox>
+                        </div>
+                    </div>*@
+                <br>
+                <div class="row" style=" border-top: inset 1px; padding-bottom: 8px; padding-top: 4px;" align="right">
+                    <div class="col-md-4">
+
+                        <SfButton IconCss="Icon cart" CssClass="e-btnss" @onclick="@Child_ClickCart" disabled=@IsCart Content="Add To Cart" align="left" />
+                    </div>
+                    <div class="col-md-4">
+                        <SfButton IconCss="Icon carts" @onclick="@CartGrid" CssClass="e-btnss" Content="Go To Cart" />
+                    </div>
+                    @*<div class="col-md-3">
+
+                        <SfButton IconCss="Icon order" CssClass="e-btnss" @onclick="@SaveOrder" disabled=@IsOrder Content="Order" />
+                    </div>*@
+                    <div class="col-md-4">
+                        <SfButton IconCss="Icon cancel" CssClass="e-btnss" @onclick="@CancelOrder" Content="Close" />
+                    </div>
+
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+
+    //CartItem
+    <!--<SfDialog Width="650px" ShowCloseIcon="true" IsModal="true" @bind-Visible="@CartIsVisible">
+        <DialogTemplates>
+            <Header>
+                <div class="col-md-4">
+
+                    <BSAlert Color="Color.Success" @bind-IsOpen="@IsOrderSave" AutoHide="true">
+                        Successfully Saved  <a><i class="fa fa-check" aria-hidden="true"></i></a>
+                    </BSAlert>
+                </div>
+            </Header>
+            <Content>
+                <div class="form-row pt-2">
+                    <div class="col-md-6">
+                        <img src="@ChildUrl" width="250" height="150" align="left" />
+                    </div>
+                    <div class="col-md-3">
+                        <label style="font-size:20px;text-align:center">@CItem.ItemName</label>
+                    </div>
+                    <div class="col-md-3">
+                        <label style="font-size:20px;text-align:center">@CItem.ItemNameAr</label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="label">Orientation:</label>
+                        <SfComboBox DataSource="@ore" Placeholder="Select" TValue="string" TItem="string" @bind-Value="cartitem.Orientation">
+                            <ComboBoxEvents TValue="string" TItem="string"></ComboBoxEvents>
+                        </SfComboBox>
+
+                    </div>
+                    <div class="col-md-6">
+                        <label class="label">Quantity:</label>
+                        <SfNumericTextBox TValue="int" @bind-Value="@NumericValue" Min="1"></SfNumericTextBox>
+
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="label">Status:</label>
+                        <SfComboBox TValue="string" TItem="dtMastermisc" Placeholder="Choose Status" DataSource="comboStatus" @bind-Value="@cartitem.Status">
+                            <ComboBoxEvents TValue="string" ValueChange="ValueChangeHandler2" TItem="dtMastermisc"></ComboBoxEvents>
+                            <ComboBoxFieldSettings Text="Description" Value="Description"></ComboBoxFieldSettings>
+                        </SfComboBox>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="label">Staffs:</label>
+                        <SfComboBox TValue="string" TItem="dtAccounts" Placeholder="Select Staff" DataSource="comboStaff" @bind-Value="@cartitem.Staff">
+                            <ComboBoxEvents TValue="string" ValueChange="ValueChangeHandler1" TItem="dtAccounts"></ComboBoxEvents>
+                            <ComboBoxFieldSettings Text="AccountName" Value="AccountName"></ComboBoxFieldSettings>
+                        </SfComboBox>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="label">Department:</label>
+                        <SfComboBox TValue="string" TItem="dtMastermisc" Placeholder="Select Department" DataSource="comboDepartment" @bind-Value="@cartitem.Department">
+                            <ComboBoxEvents TValue="string" ValueChange="ValueChangeHandler3" TItem="dtMastermisc"></ComboBoxEvents>
+                            <ComboBoxFieldSettings Text="Description" Value="Description"></ComboBoxFieldSettings>
+                        </SfComboBox>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="label">Job:</label>
+                        <SfComboBox TValue="string" EnableVirtualization="true" Query="@query" TItem="dtVoucher" AllowCustom="false" Enabled="@true" Placeholder="JobNo:" @bind-Value="@cartitem.JobNo" CssClass="e-multi-column" AllowFiltering="true" DataSource="comboJob" PopupHeight="300px" PopupWidth="300px">
+                            <ComboBoxEvents TItem="dtVoucher" TValue="string" ValueChange="@ValueChangeHandler4"></ComboBoxEvents>
+                            <ComboBoxTemplates TItem="dtVoucher">
+                                <HeaderTemplate>
+                                    <table><tr><th style="width:50px">Job No</th></tr></table>-->
+    @*<th style="width:200px">Job ID</th>*@
+    <!--</HeaderTemplate>
+    <ItemTemplate>
+        <table>
+            <tbody>
+                <tr>
+                    <td style="width:50px">@((context as dtVoucher).VNo)</td>-->
+    @*<td style="width:200px">@((context as dtVoucher).ID)</td>*@
+    <!--</tr>
+                            </tbody>
+                        </table>
+                    </ItemTemplate>
+                </ComboBoxTemplates>
+                <ComboBoxFieldSettings Text="VNo" Value="VNo"></ComboBoxFieldSettings>
+            </SfComboBox>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <label class="label">Date:</label>
+            <br>
+
+            <SfDatePicker TValue="DateTime?" Format="dd/MM/yyyy" @bind-Value="@cartitem.Date" Placeholder='Date'></SfDatePicker>-->
+    @*<SfDatePicker Placeholder="Date" Format="dd/MM/yyyy hh:mm" @bind-Value="@orderitem.Date" Enabled="true"></SfDatePicker>*@
+
+    <!--</div>
+                    <div class="col-md-6">
+                        <label class="label">Remarks:</label>
+                        <SfTextBox Placeholder="Remarks" @bind-value="cartitem.Remarks"></SfTextBox>
+                    </div>
+                </div>
+                <br>
+                <div class="row" style=" border-top: inset 1px; padding-bottom: 8px; padding-top: 4px;" align="right">
+                    <div class="col-md-12">
+
+                        <SfButton IconCss="Icon save" align="right" CssClass="e-btn" @onclick="@SaveCart" disabled=@Isdisplay Content="Save" />
+
+                        <SfButton IconCss="Icon cancel" align="right" CssClass="e-btn" @onclick="@CancelCart" Content="Close" />
+                    </div>
+
+
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>-->
+}
+
+
+
+@foreach (DtItemMaster card in dtItemMasters)
+{
+    <SfDialog Width="700px" IsModal="true" @bind-Visible="popPhoto" ShowCloseIcon="true">
+        <DialogTemplates>
+            <Header>
+            </Header>
+            <Content>
+                <div>
+                    <img src="@card.Path" style="height: 500px; width: 700px; cursor: pointer;" title="Photo" />
+                </div>
+            </Content>
+        </DialogTemplates>
+        <DialogAnimationSettings Effect="@DialogEffect.Zoom"></DialogAnimationSettings>
+    </SfDialog>
+}
+
+@code {
+
+    public bool Isload = true;
+    int id = 0;
+    int mode = 0;
+    string UserName, UserID;
+    public string Heading = "", ButtonName = "Click Me", url, name, message,ormessage;
+    public string maxOrderNo, maxCartNo, OrderNo;
+    bool IsTaskRunning = false;
+    bool IsTaskRunningss = false;
+    bool Isdisplay = false;
+    public bool IsOrderSave = false, IsOrder = true;
+    public bool IsCartSave = false, IsCart = false;
+    TooltipPosition Position = TooltipPosition.RightCenter;
+
+
+    int NumericValue;
+    public bool popPhoto { get; set; } = false;
+    public SfGrid<DtItemMaster> dgItemMaster { get; set; }
+    List<DtItemMaster> dtItemMasters = new List<DtItemMaster>();
+    List<dtMastermisc> comboStatus = new List<dtMastermisc>();
+    List<dtMastermisc> comboDepartment = new List<dtMastermisc>();
+    List<dtAccounts> comboStaff = new List<dtAccounts>();
+    List<dtVoucher> comboJob = new List<dtVoucher>();
+    public List<SPMS_Ordering> AddOrder = new List<SPMS_Ordering>();
+    public List<SPMS_OrderingCart> AddCart = new List<SPMS_OrderingCart>();
+    dtVoucher dtv = new dtVoucher();
+
+    public Query query = new Query().Take(10).RequiresCount();
+    public DateTime? DateValue { get; set; } = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 10);
+
+    public DtItemMaster ChildItem = new DtItemMaster();
+    public DtItemMaster CItem = new DtItemMaster();
+    int count = 0;
+    string Fname, MasterUrl, ChildUrl;
+    string ss;
+    private bool IsVisible { get; set; } = false;
+    //private bool CartIsVisible { get; set; } = false;
+    public SPMS_Ordering oitem = new SPMS_Ordering();
+    SPMS_Ordering orderitem = new SPMS_Ordering();
+
+    //SPMS_OrderingCart citem = new SPMS_OrderingCart();
+    public SPMS_OrderingCart cartitem = new SPMS_OrderingCart();
+    string[] cls, d;
+    public bool ShowSelectAllCheckBox { get; set; } = true;
+    public bool EnableSelectionOrders { get; set; } = true;
+    public bool EnableDropDownIcon { get; set; } = true;
+    public class Orientation
+    {
+        public string Name { get; set; }
+        public string Id { get; set; }
+    }
+    List<string> ore = new List<string>()
+{
+
+           "Left","Right","Front","Rear","None"
+        };
+
+
+
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        UserName = await sessionStorage.GetItemAsync<string>("Username");
+        UserID = await sessionStorage.GetItemAsync<string>("LocalSessionUserId");
+        if (UserName == "" || UserName == null)
+        {
+            _nav.NavigateTo(_nav.BaseUri + "Login");
+
+        }
+        else
+        {
+            //LIVE Url
+            url = (await _ItemMasterManager.MiscImageUrl());
+            //Local Url
+            // url = $@"D:\Orison\OrisonPortal\OrisonSPMS\OrisonSparePartsImages\";
+
+            if (mode == 0)
+            {
+                Heading = "Master Items";
+            }
+            else
+            {
+                Heading = "Sub Items";
+            }
+            dtItemMasters = (await _ItemMasterManager.GetItems()).ToList();
+            Isload = false;           
+            //comboStatus = (await _ItemMasterManager.getCombos()).ToList();
+            comboStaff = (await _ItemMasterManager.getComboStaff()).ToList();
+            comboDepartment = (await _ItemMasterManager.getComboDepartment()).ToList();
+            comboJob = (await _ItemMasterManager.getComboJob()).ToList();
+
+            orderitem.Date = DateTime.Now;
+        }
+
+    }
+    private void Photo_Click(Microsoft.AspNetCore.Components.Web.MouseEventArgs args)
+    {
+        popPhoto = true;
+    }
+    public void Master_Click(DtItemMaster Child)
+    {
+        Heading = "Sub Items";
+        mode = 1;
+        ChildItem = new DtItemMaster();
+        ChildItem = Child;
+        int id = ChildItem.ID;
+        MasterUrl = url + ChildItem.FileName;
+
+        InvokeAsync(StateHasChanged);
+    }
+    public void AddMaster()
+    {
+        _nav.NavigateTo(_nav.BaseUri + "AddNewSpareParts/" + 0);
+    }
+    public void AddChild()
+    {
+        _nav.NavigateTo(_nav.BaseUri + "AddNewSpareParts/" + ChildItem.ID);
+    }
+    private void GoToMaster()
+    {
+        mode = 0;
+        Heading = "Master Items";
+    }
+
+    public void Child_ClickOrder(DtItemMaster Childpopup)
+    {
+        if (orderitem.JobNo == null)
+        {
+            message = "Please Select job Number Before Cart";
+        }
+        else
+        {
+            IsOrder = true;
+            IsCart = false;
+
+            this.IsVisible = true;
+            CItem = new DtItemMaster();
+            CItem = Childpopup;
+            ChildUrl = url + CItem.FileName;
+            IsTaskRunning = false;
+
+        }
+    }
+
+
+    private void onChangeOrientation(MultiSelectChangeEventArgs<string[]> args)
+    {
+        cls = args.Value;
+        count = count + 1;
+        ormessage = "";
+    }
+
+    public async Task Child_ClickCart()
+    {
+
+        maxCartNo = (await _OrderingCartManager.GetMaxCartNo());
+
+        try
+        {
+            int i = 1;
+            List<SPMS_OrderingCart> AddCart = new List<SPMS_OrderingCart>();
+            if (cls == null)
+            {
+                ormessage = "Please Select Orientation Before Cart";
+            }
+            else
+            {
+                foreach (var res in cls)
+                {
+
+                    SPMS_OrderingCart dt = new SPMS_OrderingCart();
+                    if (maxCartNo != "")
+                    {
+                        int maxorder = Convert.ToInt32(maxCartNo);
+                        int maxOrdr = maxorder + i;
+                        dt.OrderNo = Convert.ToString(maxOrdr);
+                    }
+                    else
+                    {
+                        dt.OrderNo = "1000";
+                    }
+
+
+                    dt.Qty = Convert.ToString(NumericValue);
+                    dt.Orientation = res.ToString();
+                    //dt.Staff = orderitem.Staff;
+                    //dt.Department = orderitem.Department;
+                    dt.JobNo = orderitem.JobNo;
+                    dt.Date = orderitem.Date;
+                    dt.CUser = Convert.ToInt32(UserID);
+                    dt.MDate = DateTime.Now;
+                    dt.CDate = DateTime.Now;
+                    dt.ItemID = CItem.ID;
+                    dt.ItemName = CItem.ItemName;
+                    dt.ItemCode = CItem.ItemCode;
+                    dt.IsActive = 1;
+                    AddCart.Add(dt);
+                    i = i + 1;
+                }
+
+                HttpResponseMessage response = await _OrderingCartManager.SaveCart(AddCart);
+                if (response.IsSuccessStatusCode)
+                {
+                    IsCartSave = true;
+                    IsCart = true;
+                    cls = null;
+                    ButtonName = "Disabled";
+                    StateHasChanged();
+
+                    //orderitem.Orientation = "";
+                    //orderitem.Qty = "";
+                    //orderitem.Department = "";
+                    //orderitem.Staff = "";
+                }
+
+
+            }
+
+
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+
+
+
+    }
+
+    private void ValueChangeHandler1(ChangeEventArgs<string, dtAccounts> args)
+    {
+        orderitem.Staff = args.Value;
+    }
+    private void ValueChangeHandler2(ChangeEventArgs<string, dtMastermisc> args)
+    {
+        orderitem.Status = args.Value;
+    }
+    private void ValueChangeHandler3(ChangeEventArgs<string, dtMastermisc> args)
+    {
+        orderitem.Department = args.Value;
+    }
+    private void ValueChangeHandler4(ChangeEventArgs<string, dtVoucher> args)
+    {
+        if (args.ItemData == null)
+        {
+            message = "Please Select job Number Before Cart";
+        }
+        else
+        {
+            orderitem.JobNo = args.ItemData.VNo;
+            message = "";
+        }
+
+    }
+
+
+
+
+
+
+
+    private async Task SaveOrder()
+    {
+
+        //int maxorder = Convert.ToInt32(maxOrderNo);
+        //foreach (var res in cls)
+        //{
+
+        //    int maxOrder = maxorder + 1;
+        //     d[] = Convert.ToString(maxOrder);
+
+        //}
+
+
+        try
+        {
+
+            //maxOrderNo = (await _ItemMasterManager.GetMaxOrderNo());
+            foreach (var res in cls)
+            {
+                SPMS_Ordering dt = new SPMS_Ordering();
+
+                if (maxOrderNo != "")
+                {
+                    int maxorder = Convert.ToInt32(maxOrderNo);
+                    int maxOrdr = maxorder + 1;
+                    dt.OrderNo = Convert.ToString(maxOrdr);
+
+                }
+                else
+                {
+                    dt.OrderNo = "1000";
+
+                }
+                dt.Orientation = orderitem.Orientation;
+                dt.Staff = orderitem.Staff;
+                dt.Department = orderitem.Department;
+                dt.JobNo = orderitem.JobNo;
+                dt.Date = orderitem.Date;
+                dt.CUser = Convert.ToInt32(UserID);
+                dt.Orientation = res.ToString();
+                dt.MDate = DateTime.Now;
+                dt.CDate = DateTime.Now;
+                dt.ItemID = CItem.ID;
+                dt.Qty = Convert.ToString(NumericValue);
+                dt.IsActive = 1;
+                AddOrder.Add(dt);
+
+            }
+            HttpResponseMessage response = await _ItemMasterManager.SaveOrder(AddOrder);
+            if (response.IsSuccessStatusCode)
+            {
+                IsOrderSave = true;
+                IsOrder = true;
+                IsTaskRunning = true;
+                ButtonName = "Disabled";
+
+                //  StateHasChanged();
+                StateHasChanged();
+
+                //orderitem.Orientation = "";
+                //orderitem.Qty = "";
+                //orderitem.Department = "";
+                //orderitem.Staff = "";
+            }
+
+
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+    }
+    //private async Task SaveCart()
+    //{
+    //    try
+    //    {
+    //        Isdisplay = false;
+    //        //int maxorder = Convert.ToInt32(maxOrderNo);
+    //        //int maxOrdr = maxorder + 1;
+    //        // cartitem.OrderNo = Convert.ToString(maxOrdr);
+    //        cartitem.CUser = Convert.ToInt32(UserID);
+
+    //        cartitem.Qty = Convert.ToString(NumericValue);
+    //        cartitem.MDate = DateTime.Now;
+    //        cartitem.CDate = DateTime.Now;
+    //        cartitem.ItemID = CItem.ID;
+    //        HttpResponseMessage response = await _OrderingCartManager.SaveCart(cartitem);
+    //        if (response.IsSuccessStatusCode)
+    //        {
+    //            IsCartSave = true;
+    //            Isdisplay = true;
+    //            ButtonName = "Disabled";
+
+    //            //  StateHasChanged();
+    //        }
+
+
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        Console.WriteLine(ex.Message);
+    //    }
+
+    //}
+    private async Task CancelOrder()
+    {
+        IsVisible = false;
+    }
+
+    private async Task CartGrid()
+    {
+        _nav.NavigateTo(_nav.BaseUri + "SparePartsCarts");
+    }
+
+    //private async Task CancelCart()
+    //{
+    //    CartIsVisible = false;
+    //}
+}

@@ -1,0 +1,927 @@
+﻿@page "/jobstatusold1"
+@using Syncfusion.Blazor.Inputs
+@using AdminDiplomacyAPP.Entities
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Calendars
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Popups
+@using Microsoft.AspNetCore.Components;
+@using AdminDiplomacyAPP.Services
+@using Syncfusion.Blazor.Data
+@using Syncfusion.Blazor.LinearGauge
+@using System.Net
+@using Syncfusion.Blazor.ProgressBar
+@using System.Threading
+@using System.IO
+@inject NavigationManager NavigationManager
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+@inject AdminDiplomacyAPP.Contract.IJobRegister _Jobs
+@inject AdminDiplomacyAPP.Contract.ISMSManager _SmsManager
+@inject ClipboardService ClipboardService
+<head>
+    <style>
+        label {
+            display: inline-block;
+            margin-bottom: 0rem;
+        }
+
+        .MyIndexClass::after {
+            content: attr(data-index);
+        }
+
+        .my-grid .dxbs-filter-row th:nth-child(1) div {
+            display: none;
+        }
+
+        .e-grid .e-altrow {
+            background-color: #E8EEFA;
+        }
+
+        .e-grid .e-headercell {
+            background-image: linear-gradient( 0deg, #5f368d85, #B7D8DC);
+        }
+
+        .e-columnheader {
+            height: 30px;
+        }
+
+        .e-grid .e-rowcell {
+            font-size: 12px;
+        }
+
+        .e-grid .e-filterbarcell, .e-grid .e-filterbarcelldisabled {
+            background-image: linear-gradient( 0deg, #5f368d85, #B7D8DC);
+        }
+
+        .gridimg {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            width: 50%;
+        }
+
+        .e-btn2 {
+            cursor: pointer;
+            background-color: transparent;
+            border-color: #007bff;
+            color: #007bff;
+        }
+
+        .e-btn .e-btn-icon {
+            width: 1.5em;
+        }
+
+        .e-upload-picture::before {
+            content: '\e724';
+            font-family: e-icons;
+        }
+
+        .e-grid .e-gridheader {
+            border-bottom-color: #dee2e6;
+            border-top-color: #dee2e6;
+            color: #212529;
+            background-image: linear-gradient( 0deg, #5f368d85, #B7D8DC);
+        }
+    </style>
+</head>
+
+<div class="form-group">
+    <div class="row">
+        <div class="col-sm">
+            <div class="row" style="padding-bottom:1%;">
+                <div class="col-md">
+                    @*<SfButton IsPrimary="true" IconCss="Icon add" @onclick="@AddComplaint" CssClass="e-outline">New</SfButton>*@
+                    <SfButton @onclick="ExcelExport" IconCss="Icon excel" CssClass="e-outline" Content="Excel" IsPrimary="true" />
+                    @*<SfButton @onclick="ExportPdf" IconCss="Icon pdf" CssClass="e-outline" Content="Pdf" IsPrimary="true" />*@
+                    @*<SfTextBox @ref="search" Input="OnInput" Placeholder="Global Search" Width="140px" ShowClearButton="true" CssClass="e-btn2" ValueChange="OnSearch" Created="@onCreateSearch"></SfTextBox>*@
+                    <SfComboBox DataSource="comboStatus" @bind-Value="SelectedStatus" CssClass="e-btn2" Placeholder="Select Status" Width="175px">
+                        <ComboBoxEvents ValueChange="OnStatusComboChange" TItem="string" TValue="string"></ComboBoxEvents>
+                    </SfComboBox>
+                    <SfButton IconCss="Icon filter" CssClass="e-btn2" @onclick="@Clear_Click" IsPrimary="false" />
+                    <SfButton OnClick="ShowColumnChooser" IconCss="Icon columnchooser" CssClass="e-btn2" IsPrimary="false"></SfButton>
+                    <SfDatePicker TValue="DateTime?" Width="110px" Format="dd/MM/yyyy" @bind-Value="@StartDate" Placeholder='Start Date'></SfDatePicker>
+                    <SfDatePicker TValue="DateTime?" Width="110px" Format="dd/MM/yyyy" @bind-Value="@EndDate" Placeholder='End Date'></SfDatePicker>
+                    <SfButton IconCss="Icon search" CssClass="e-btn2" @onclick="@Search_Click" IsPrimary="false" />
+                    <BlazorStrap.BSAlert Color="BlazorStrap.Color.Success" @bind-IsOpen="@IsCopy" AutoHide="true">
+                        Job Copied To Clipboard <a><i class="fa fa-check" aria-hidden="true"></i></a>
+                    </BlazorStrap.BSAlert>
+                    <SfButton CssClass="e-outline" @onclick="@ShowAllClick" IsPrimary="false" Content="Show All" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <SfDialog Width="550px" IsModal="true" @bind-Visible="CopyVisibility" ShowCloseIcon="true">
+        <DialogTemplates>
+            <Content>
+                <div>
+                    <h5>Job Link</h5>
+                    <SfTextBox CssClass="e-success" @bind-Value="@JobURL" Enabled="true"></SfTextBox>
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+
+    <SfDialog Width="550px" IsModal="true" @bind-Visible="SmsVisibility" ShowCloseIcon="true">
+        <DialogTemplates>
+            <Content>
+                <BlazorStrap.BSAlert Color="BlazorStrap.Color.Success" @bind-IsOpen="@IsSended" AutoHide="true">
+                    SMS Sended Succesfully <a><i class="fa fa-check" aria-hidden="true"></i></a>
+                </BlazorStrap.BSAlert>
+                <div>
+                    <h5>SMS Panel</h5>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label>To:</label>
+                        </div>
+                        <div class="col-md-6">
+                            <SfTextBox CssClass="e-outline" @bind-Value="@sms.RecNumber" Enabled="true" Placeholder=""></SfTextBox>
+                        </div>
+                        <div class="col-md-1">
+                            <SfButton IconCss="Icon sendSMS" Disabled="@btnSMS" OnClick="@SendSMS" CssClass="e-outline">SMS</SfButton>
+                        </div>
+                        <div class="col-md-2"></div>
+                    </div>
+
+                    <div class="row mt-1">
+                        <div class="col-md-3">
+                            <label>Delivery Report:</label>
+                        </div>
+                        <div class="col-md-6">
+                            <SfTextBox CssClass="e-outline" @bind-Value="@sms.Output" Enabled="false" Placeholder=""></SfTextBox>
+                        </div>
+                        <div class="col-md-1">
+                            <SfButton IconCss="Icon clearSMS" Disabled="false" OnClick="@DeliverySMS" CssClass="e-outline">Clear</SfButton>
+                        </div>
+                        <div class="col-md-2"></div>
+                    </div>
+
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+
+
+    <SfDialog Width="700px" IsModal="true" @bind-Visible="StatusVisibility" ShowCloseIcon="true">
+        <DialogTemplates>
+            <Header>
+                <BlazorStrap.BSAlert Color="BlazorStrap.Color.Success" @bind-IsOpen="@SaveAlert" AutoHide="true">
+                    Successfully Saved <a><i class="fa fa-check" style="color: #039624 " aria-hidden="true"></i></a>
+                </BlazorStrap.BSAlert>
+                <BlazorStrap.BSAlert Color="BlazorStrap.Color.Danger" @bind-IsOpen="@SaveError" AutoHide="true">
+                    BlazorStrap.BSAlert went wrong...Please try again <a><i class="fa fa-exclamation-triangle" style="color: #721c24 " aria-hidden="true"></i></a>
+                </BlazorStrap.BSAlert>
+                <BlazorStrap.BSAlert Color="BlazorStrap.Color.Danger" @bind-IsOpen="@StatusError" AutoHide="true">
+                    Please select status before saving  <a><i class="fa fa-exclamation-triangle" style="color: #721c24 " aria-hidden="true"></i></a>
+                </BlazorStrap.BSAlert>
+            </Header>
+            <Content>
+                <div class="container-fluid">
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <label class="label">Curren Status</label>
+                            <SfComboBox TItem="string" Enabled="false" AllowCustom="false" @bind-Value="@dtStatus.OldStatus" Placeholder="Select" TValue="string" DataSource="@comboStatus">
+                            </SfComboBox>
+                        </div>
+                    </div>
+
+                    <div class="row mt-1">
+
+                        <div class="col-md-6">
+                            <label class="label">Date</label>
+                            <SfDatePicker Placeholder="" Format="dd/MM/yyyy hh:mm" @bind-Value="@dtStatus.StatusDate" Enabled="true"></SfDatePicker>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="label">New Status</label>
+                            <SfComboBox TItem="string" AllowCustom="false" @bind-Value="@dtStatus.Status" Placeholder="Select" TValue="string" DataSource="@comboStatus">
+                            </SfComboBox>
+                        </div>
+
+                    </div>
+
+                    <div class="row mt-1">
+                        <div class="col-md-6">
+                            <label class="label">Department</label>
+                            <SfComboBox TItem="string" AllowCustom="false" @bind-Value="@dtStatus.Department" Placeholder="Select" TValue="string" DataSource="@Department">
+                            </SfComboBox>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="label">Staff</label>
+                            <SfComboBox TValue="string" @ref="@ComboStaffRef" AllowCustom="false" EnableVirtualization="true" TItem="dtAccounts" Enabled="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" @bind-Value="@dtStatus.Staff" CssClass="e-multi-column" AllowFiltering="true" DataSource="@Staffs" PopupHeight="300px" PopupWidth="300px">
+                                <ComboBoxFieldSettings Text="AccountName" Value="AccountName"></ComboBoxFieldSettings>
+                                <ComboBoxEvents TValue="string" TItem="dtAccounts" OnValueSelect="OnChangeStaff"></ComboBoxEvents>
+                            </SfComboBox>
+                        </div>
+
+                    </div>
+
+                    <div class="row mt-1">
+                        <div class="col-md-12">
+                            <label class="label">Remarks</label>
+                            <SfTextBox Multiline=true @bind-Value="@dtStatus.Remarks" Placeholder="" Enabled="true"></SfTextBox>
+                        </div>
+
+                        <div class="col-md-6"></div>
+                    </div>
+
+                </div>
+            </Content>
+        </DialogTemplates>
+        <DialogButtons>
+            <DialogButton Content="Save" IsPrimary="true" @onclick="@Save_Click" Disabled="@btnSave" />
+            <DialogButton Content="Close" @onclick="@btnClose" Disabled="false" />
+        </DialogButtons>
+        <DialogAnimationSettings Effect="@DialogEffect.None"></DialogAnimationSettings>
+    </SfDialog>
+
+
+    <div>
+        @if (JobData == null)
+        {
+            <p><em>Loading...</em></p>
+        }
+        else
+        {
+            @*<div class="table-responsive" style="position: relative; min-height:600px; min-width: 300px;max-width:1100px ">*@
+            <div class="table-responsive" style="position: relative; min-height: 600px; min-width: 300px; max-width: 1100px ">
+
+                <SfGrid DataSource="@GridData" ID="Grid" @ref="GridJobMaster" AllowFiltering="true" AllowPaging="true" AllowExcelExport="true"
+                        AllowPdfExport="true" Height="560" Width="100%" EnableAdaptiveUI="false" ShowColumnChooser="true" AllowResizing="true"
+                        AllowSorting="true" EnableAltRow="true" RowHeight="24">
+                    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" ShowFilterBarStatus="true"></GridFilterSettings>
+                    <GridPageSettings PageSize="50"></GridPageSettings>
+                    <GridTemplates>
+                        <DetailTemplate>
+                            @{
+                                var status = (context as dtJobRegister);
+                                <SfGrid TValue="dtVoucherStatus" DataSource="@StatusList" Query="@(new Query().Where("VID", "equal", status.ID))"
+                                        RowHeight="25" Width="800px" GridLines="GridLine.Both" AllowResizing="true">
+                                    <GridColumns>
+                                        <GridColumn Field=@nameof(dtVoucherStatus.Staff) HeaderText="Staff" Width="120px"></GridColumn>
+                                        <GridColumn Field=@nameof(dtVoucherStatus.Status) HeaderText="Status" Width="100px"></GridColumn>
+                                        <GridColumn Field=@nameof(dtVoucherStatus.Remarks) HeaderText="Remarks" Width="150px"></GridColumn>
+                                        <GridColumn Field=@nameof(dtVoucherStatus.StatusDate) HeaderText="Status Date" Format="dd/MM/yyyy hh:mm" Width="120px"></GridColumn>
+                                        <GridColumn Field=@nameof(dtVoucherStatus.Department) HeaderText="Department" Width="120px"></GridColumn>
+                                    </GridColumns>
+                                </SfGrid>
+                            }
+                        </DetailTemplate>
+                    </GridTemplates>
+                    <GridColumns>
+
+                        <GridColumn Field=@nameof(dtJobRegister.VNo) Format="" HeaderText="Job No" Width="100px">
+                            <Template>
+                                @{
+                                    var obj = (context as dtJobRegister);
+                                    if (obj.IsRed)
+                                    {
+                                        <div style="color: #FF5245">@obj.VNo</div>
+                                    }
+                                    else
+                                    {
+                                        @obj.VNo
+                                    }
+                                }
+                            </Template>
+                        </GridColumn>
+
+                        <GridColumn Field=@nameof(dtJobRegister.Field3) Format="" HeaderText="VIN" Width="120px">
+                            <Template>
+                                @{
+                                    var obj = (context as dtJobRegister);
+                                    if (obj.IsRed)
+                                    {
+                                        <div style="color: #FF5245">@obj.Field3</div>
+                                    }
+                                    else
+                                    {
+                                        @obj.Field3
+                                    }
+                                }
+                            </Template>
+                        </GridColumn>
+
+                        <GridColumn Field=@nameof(dtJobRegister.PartyName) Format="" HeaderText="Customer" Width="120px">
+                            <Template>
+                                @{
+                                    var obj = (context as dtJobRegister);
+                                    if (obj.IsRed)
+                                    {
+                                        <div style="color: #FF5245">@obj.PartyName</div>
+                                    }
+                                    else
+                                    {
+                                        @obj.PartyName
+                                    }
+                                }
+                            </Template>
+                        </GridColumn>
+
+                        <GridColumn Field=@nameof(dtJobRegister.Field1) Format="" HeaderText="Car Type" Width="100px">
+                            <Template>
+                                @{
+                                    var obj = (context as dtJobRegister);
+                                    if (obj.IsRed)
+                                    {
+                                        <div style="color: #FF5245">@obj.Field1</div>
+                                    }
+                                    else
+                                    {
+                                        @obj.Field1
+                                    }
+                                }
+                            </Template>
+                        </GridColumn>
+
+                        <GridColumn Field=@nameof(dtJobRegister.Field2) HeaderText="Color" Width="100px">
+                            <Template>
+                                @{
+                                    var obj = (context as dtJobRegister);
+                                    if (obj.IsRed)
+                                    {
+                                        <div style="color: #FF5245">@obj.Field2</div>
+                                    }
+                                    else
+                                    {
+                                        @obj.Field2
+                                    }
+                                }
+                            </Template>
+                        </GridColumn>
+
+                        <GridColumn Field=@nameof(dtJobRegister.Field4) HeaderText="Plate No" Width="100px">
+                            <Template>
+                                @{
+                                    var obj = (context as dtJobRegister);
+                                    if (obj.IsRed)
+                                    {
+                                        <div style="color: #FF5245">@obj.Field4</div>
+                                    }
+                                    else
+                                    {
+                                        @obj.Field4
+                                    }
+                                }
+                            </Template>
+                        </GridColumn>
+
+                        <GridColumn Field=@nameof(dtJobRegister.Status) Format="" HeaderText="Status Graph" Width="950px">
+                            <Template>
+                                @{
+                                    var red = (context as dtJobRegister).IsRed;
+
+                                    var JobStatus = (context as dtJobRegister).Status;
+
+                                    lGuage lol = new lGuage();
+                                    lol.label = "New Job";
+                                    lol.pos = 10;
+
+                                    if (!string.IsNullOrEmpty(JobStatus))
+                                    {
+                                        try
+                                        {
+                                            lol = testlist.Where(s => s.label.Contains(JobStatus)).FirstOrDefault();
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            throw ex;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        lol.label = "New Job";
+                                        lol.pos = 0;
+                                    }
+                                    <div style=" margin-left: -55px;">
+                                        @if (red)
+                                        {
+                                            <SfLinearGauge Orientation="Orientation.Horizontal" AllowMargin="false" Height="40px">
+                                                <LinearGaugeEvents AxisLabelRendering="AxisLabelChange" />
+                                                <LinearGaugeTitleStyle FontWeight="499" FontFamily="inherit" />
+                                                <LinearGaugeContainer Width="60" Offset="35">
+                                                    <LinearGaugeContainerBorder Width="0" />
+                                                    <LinearGaugeAxes>
+                                                        <LinearGaugeAxis Minimum="0" Maximum="70">
+                                                            <LinearGaugeLine Width="0" />
+                                                            <LinearGaugeMajorTicks Height="10" Interval="10" />
+                                                            <LinearGaugeMinorTicks Height="0" />
+                                                            <LinearGaugeRanges>
+                                                                @if (lol != null)
+                                                                {
+                                                                    <LinearGaugeRange Start="0" End="(lol.pos - 10)" Color="#A9D08E" Offset="10"></LinearGaugeRange>
+                                                                    <LinearGaugeRange Start="(lol.pos - 10)" End="lol.pos" Color="#FF5245" Offset="10"></LinearGaugeRange>
+                                                                }
+                                                            </LinearGaugeRanges>
+                                                            @*<LinearGaugePointers>
+                                                                    @if (lol != null)
+                                                                    {
+                                                                        <LinearGaugePointer PointerValue="@lol.pos" Placement="Syncfusion.Blazor.LinearGauge.Placement.Near" Type="Point.Bar" Position="Syncfusion.Blazor.LinearGauge.Position.Outside" Width="5" Height="10" Offset="2" AnimationDuration="1500">
+                                                                            <LinearGradient StartValue="0%" EndValue="100%">
+                                                                                <ColorStops>
+                                                                                    <ColorStop Opacity="1" Offset="90%" Color="#A9D08E" />
+                                                                                    <ColorStop Opacity="1" Offset="100%" Color="#FF5245" />
+                                                                                </ColorStops>
+                                                                            </LinearGradient>
+                                                                        </LinearGaugePointer>
+                                                                    }
+                                                                </LinearGaugePointers>*@
+                                                        </LinearGaugeAxis>
+                                                    </LinearGaugeAxes>
+                                                </LinearGaugeContainer>
+                                            </SfLinearGauge>
+                                        }
+                                        else
+                                        {
+                                            <SfLinearGauge Orientation="Orientation.Horizontal" AllowMargin="false" Height="40px">
+                                                <LinearGaugeEvents AxisLabelRendering="AxisLabelChange" />
+                                                <LinearGaugeTitleStyle FontWeight="499" FontFamily="inherit" />
+                                                <LinearGaugeContainer Width="60" Offset="35">
+                                                    <LinearGaugeContainerBorder Width="0" />
+                                                    <LinearGaugeAxes>
+                                                        <LinearGaugeAxis Minimum="0" Maximum="70">
+                                                            <LinearGaugeLine Width="0" />
+                                                            <LinearGaugeMajorTicks Height="10" Interval="10" />
+                                                            <LinearGaugeMinorTicks Height="0" />
+                                                            <LinearGaugePointers>
+                                                                @if (lol != null)
+                                                                {
+                                                                    <LinearGaugePointer PointerValue="@lol.pos" Placement="Syncfusion.Blazor.LinearGauge.Placement.Near" Type="Point.Bar" Position="Syncfusion.Blazor.LinearGauge.Position.Outside" Width="5" Height="10" Offset="2" AnimationDuration="1500">
+                                                                        <LinearGradient StartValue="0%" EndValue="100%">
+                                                                            <ColorStops>
+                                                                                <ColorStop Opacity="1" Offset="100%" Color="#A9D08E" />
+                                                                            </ColorStops>
+                                                                        </LinearGradient>
+                                                                    </LinearGaugePointer>
+                                                                }
+                                                            </LinearGaugePointers>
+                                                        </LinearGaugeAxis>
+                                                    </LinearGaugeAxes>
+                                                </LinearGaugeContainer>
+                                            </SfLinearGauge>
+                                        }
+                                    </div>
+                                }
+                            </Template>
+                        </GridColumn>
+                    </GridColumns>
+                </SfGrid>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // [Parameter]
+    [Parameter]
+    public string copyTExt { get; set; }
+    public bool CopyVisibility { get; set; } = false;
+    public bool SmsVisibility { get; set; } = false;
+
+    public bool StatusVisibility { get; set; } = false;
+
+    public bool ShowAll { get; set; } = false;
+
+    public bool IsCopy = false;
+    public bool IsSended = false;
+    public bool btnSMS = false;
+
+    public bool StatusError = false;
+    public bool SaveAlert = false;
+    public bool SaveError = false;
+
+    public string JobURL = "";
+    public int VoucherID { get; set; }
+    public int StatusID { get; set; }
+
+    public string smsid { get; set; }
+    public bool btnSave = false;
+    dtSMS sms = new dtSMS();
+
+    DateTime? Today = DateTime.Now;
+    DateTime Date = DateTime.Today;
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+    SfTextBox search;
+    public SfGrid<dtJobRegister> GridJobMaster { get; set; }
+
+    private List<string> Ctypetest;
+    public string ID { get; set; }
+
+    public Query StaffQuery { get; set; } = new Query().Take(20);
+    private SfComboBox<string, dtAccounts> ComboStaffRef;
+
+    string jsonString = "", SelectedStatus;
+    private List<dtJobRegister> JobData = new List<dtJobRegister>();
+    private List<dtJobRegister> GridData = new List<dtJobRegister>();
+
+    List<dtVoucherStatus> StatusList = new List<dtVoucherStatus>();
+    dtVoucherStatus dtStatus = new dtVoucherStatus();
+    IEnumerable<string> comboStatus = new List<string>();
+    IEnumerable<string> Department = new List<string>();
+    List<dtAccounts> Staffs = new List<dtAccounts>();
+    List<lGuage> testlist = new List<lGuage>();
+    int user, BranchID, AccountID, RID;
+    public string category;
+    public Syncfusion.Blazor.Theme Theme { get; set; }
+
+    public class lGuage
+    {
+        public double pos { get; set; }
+        public string label { get; set; }
+    }
+
+
+    public bool IsInitialRender { get; set; }
+
+
+    private void AxisLabelChange(AxisLabelRenderEventArgs args)
+    {
+        if (args.Text == "0")
+            args.Text = "Checking Started";
+        else if (args.Text == "10")
+            args.Text = "Informed Customer";
+        else if (args.Text == "20")
+            args.Text = "Customer Approved";
+        else if (args.Text == "30")
+            args.Text = "Waiting Parts";
+        else if (args.Text == "40")
+            args.Text = "Repairing Started";
+        else if (args.Text == "50")
+            args.Text = "Repairing Finished";
+        else if (args.Text == "60")
+            args.Text = "Waiting Customer";
+        else
+            args.Text = " ";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        BranchID = await sessionStorage.GetItemAsync<int>("BranchID");
+        user = await sessionStorage.GetItemAsync<int>("LocalSessionUserId");
+        category = await sessionStorage.GetItemAsync<string>("Category");
+
+
+        if (user == 0)
+        {
+            NavigationManager.NavigateTo("Login");
+        }
+        else
+        {
+            StatusList = await _Jobs.GetVoucherStatus();
+            comboStatus = await _Jobs.getCombos("JobStatus");
+            int m = 1;
+            foreach (var dt in comboStatus)
+            {
+                if (dt == "Checking Started")
+                {
+                    testlist.Add(new lGuage { pos = 5, label = dt });
+                }
+                else if (dt == "Informed Customer")
+                {
+                    testlist.Add(new lGuage { pos = 15, label = dt });
+                }
+                else if (dt == "Customer Approved")
+                {
+                    testlist.Add(new lGuage { pos = 25, label = dt });
+                }
+                else if (dt == "Waiting Parts")
+                {
+                    testlist.Add(new lGuage { pos = 35, label = dt });
+                }
+                else if (dt == "Repairing Started")
+                {
+                    testlist.Add(new lGuage { pos = 45, label = dt });
+                }
+                else if (dt == "Repairing Finished")
+                {
+                    testlist.Add(new lGuage { pos = 55, label = dt });
+                }
+                else if (dt == "Waiting Customer")
+                {
+                    testlist.Add(new lGuage { pos = 65, label = dt });
+                }
+            }
+
+            if (category != "Administrator")
+            {
+                await this.GridJobMaster.HideColumns("*");
+            }
+            JobData = await _Jobs.GetAllJob();
+
+            foreach (var dt in JobData)
+            {
+                if (dt.StatusDate != null)
+                {
+                    dt.StatusTime = DateTime.Now - dt.StatusDate;
+                    if (dt.Status == "Checking Started" || dt.Status == "Informed Customer" || dt.Status == "Customer Approved" || dt.Status == "Waiting Parts" || dt.Status == "Repairing Started")
+                    {
+                        if (dt.StatusTime > new TimeSpan(03, 00, 00))
+                        {
+                            dt.IsRed = true;
+                        }
+                        else
+                        {
+                            dt.IsRed = false;
+                        }
+                    }
+                    else if (dt.Status == "Repairing Started" && dt.StatusTime > new TimeSpan(12, 00, 00))
+                    {
+                        dt.IsRed = true;
+                    }
+                    else if (dt.Status == "Waiting Customer" && dt.StatusTime > new TimeSpan(24, 00, 00))
+                    {
+                        dt.IsRed = true;
+                    }
+                    else
+                    {
+                        dt.IsRed = false;
+                    }
+                    GridData = JobData.FindAll(x => x.Status != "Car Delivered").ToList();
+
+                    //if (dt.Status != "Car Delivered" && dt.StatusTime > new TimeSpan(02, 00, 00))
+                    //{
+                    //    dt.IsRed = true;
+                    //}
+                    //else
+                    //{
+                    //    dt.IsRed = false;
+                    //}
+                }
+                else
+                {
+                    dt.StatusTime = (TimeSpan?)null;
+                    dt.IsRed = true;
+                }
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void btnClose()
+    {
+        StatusVisibility = false;
+    }
+
+    private async Task OnFilteringStaff(Syncfusion.Blazor.DropDowns.FilteringEventArgs args)
+    {
+
+        args.PreventDefaultAction = true;
+        var query = new Query().Where(new WhereFilter() { Field = "AccountName", Operator = "contains", value = args.Text, IgnoreCase = true });
+        query = !string.IsNullOrEmpty(args.Text) ? query : new Query();
+        await ComboStaffRef.FilterAsync(Staffs, query);
+    }
+
+    public void OnChangeStaff(SelectEventArgs<dtAccounts> args)
+    {
+        if (args.ItemData != null)
+        {
+            dtStatus.Staff = args.ItemData.AccountName;
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    public async Task Save_Click()
+    {
+        if (dtStatus.Status != "")
+        {
+            dtStatus.MDate = DateTime.Now;
+            dtStatus.MUser = user;
+
+            HttpResponseMessage result = await _Jobs.SaveVoucherStatus(dtStatus);
+
+            if (result.IsSuccessStatusCode)
+            {
+                dtStatus = new dtVoucherStatus();
+                SaveAlert = true;
+                await RefreshGrids();
+            }
+            else
+            {
+                SaveError = true;
+            }
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async Task RefreshGrids()
+    {
+        dtStatus = new dtVoucherStatus();
+        JobData = await _Jobs.GetAllJob();
+        StatusList = await _Jobs.GetVoucherStatus();
+        dtStatus.StatusDate = DateTime.Today;
+    }
+
+    private void AddComplaint()
+    {
+        NavigationManager.NavigateTo("Complaints", true);
+    }
+
+    private void EditDetails_Click(int JobID)
+    {
+        var enc = JobID * 3;
+        NavigationManager.NavigateTo("newjob/" + enc.ToString());
+    }
+
+    private async Task SendSMS()
+    {
+
+        try
+        {
+            HttpResponseMessage msg = new HttpResponseMessage();
+            if (sms.JobID != "" && sms.RecNumber != "")
+            {
+                msg = await _SmsManager.SendText(sms);
+                smsid = msg.Content.ReadAsStringAsync().Result;
+
+                if (!string.IsNullOrEmpty(smsid))
+                {
+                    btnSMS = true;
+                    Thread.Sleep(TimeSpan.FromSeconds(15));
+
+                    IsSended = true;
+
+                    string DeliveryMsg = "";
+
+                    DeliveryMsg = await _SmsManager.DeliveryReport(smsid);
+                    sms.Output = DeliveryMsg;
+
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task DeliverySMS()
+    {
+        sms = new dtSMS();
+        btnSMS = false;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SMSPanel(dtJobRegister job)
+    {
+        sms.JobID = job.VNo;
+        sms.vehicle = job.Field1;
+        sms.date = DateTime.Now;
+        sms.RecNumber = job.Tel;
+        sms.VID = job.ID.ToString();
+
+        SmsVisibility = true;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task StatusPanel(dtJobRegister job)
+    {
+        dtStatus.VID = job.ID;
+        dtStatus.OldStatus = job.Status;
+        dtStatus.StatusDate = DateTime.Now;
+
+        StatusVisibility = true;
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task CopyToClipboard(int jobid)
+    {
+
+
+        var link = await _SmsManager.ShortenLink(jobid);
+
+        //copyTExt = jobid.ToString();
+
+        //string copyURL = copyTExt;
+
+        //var uri = NavigationManager.ToAbsoluteUri(copyURL).ToString();
+
+        CopyVisibility = true;
+
+        JobURL = link;
+
+        //try
+        //{
+        //    IsCopy = true;
+
+        //    await ClipboardService.WriteTextAsync(uri);
+        //}
+        //catch
+        //{
+        //    Console.WriteLine("Cannot write text to clipboard");
+        //}
+    }
+
+    public void ExportPdf()
+    {
+        this.GridJobMaster.ExportToPdfAsync();
+    }
+
+    public void ExcelExport()
+    {
+        this.GridJobMaster.ExportToExcelAsync();
+    }
+
+    public void OnInput(InputEventArgs args)
+    {
+        this.GridJobMaster.Search(args.Value);
+    }
+
+
+    public void OnSearch(Syncfusion.Blazor.Inputs.ChangedEventArgs args)
+    {
+        if (args.Value != null)
+        {
+            this.GridJobMaster.SearchAsync(args.Value);
+            this.StateHasChanged();
+        }
+    }
+
+    public void onCreateSearch()
+    {
+        this.search.AddIcon("append", "e-upload-picture");
+
+    }
+
+    public void ShowColumnChooser()
+    {
+
+        this.GridJobMaster.OpenColumnChooser(200, 50);
+    }
+
+    public async Task Clear_Click()
+    {
+
+
+        await GridJobMaster.ClearFilteringAsync();
+        await GridJobMaster.Search("");
+
+        // GridJobMaster = await _Jobs.GetAllJob();
+        StartDate = null;
+        EndDate = null;
+
+    }
+
+    public async Task Search_Click()
+    {
+        JobData = await _Jobs.GetAllJob();
+
+        if (StartDate != null && EndDate != null)
+        {
+
+            try
+            {
+                JobData = JobData.Where(s => s.VDate.Value.Date >= StartDate.Value.Date && s.VDate.Value.Date <= EndDate.Value.Date).ToList();
+            }
+            catch (Exception ex)
+            { throw ex; }
+        }
+
+    }
+
+    protected void OnStatusComboChange(Syncfusion.Blazor.DropDowns.ChangeEventArgs<string, string> args)
+    {
+        if (args.Value == null || args.Value == "")
+        {
+            this.GridJobMaster.SearchAsync("");
+            this.StateHasChanged();
+        }
+        else
+        {
+            this.GridJobMaster.SearchAsync(args.Value);
+            this.StateHasChanged();
+        }
+    }
+
+    public async Task<int> GetRowCounter(dtJobRegister val)
+    {
+        int RowCounter = JobData.IndexOf(val);
+        return RowCounter + 1;
+    }
+
+    public async Task ShowAllClick()
+    {
+        if (ShowAll)
+        {
+            GridData = JobData.FindAll(x => x.Status != "Car Delivered").ToList();
+            ShowAll = false;
+        }
+        else
+        {
+            GridData = JobData;
+            ShowAll = true;
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+}

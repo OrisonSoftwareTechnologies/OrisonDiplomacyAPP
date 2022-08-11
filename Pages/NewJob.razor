@@ -1,0 +1,1411 @@
+﻿@page "/Newjob/{ID}"
+@using Syncfusion.Blazor.Calendars
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.DropDowns
+@using AdminDiplomacyAPP.Entities;
+@using Syncfusion.Blazor.Data
+@using System.IO
+@using System.Threading
+@using Newtonsoft.Json;
+@using AdminDiplomacyAPP.Services 
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+@inject NavigationManager NavigationManager
+@inject AdminDiplomacyAPP.Contract.IJobRegister _job
+@inject IJSRuntime JSRuntime
+
+
+@*@functions{
+       protected async override Task OnAfterRenderAsync(bool firstrender)
+       {
+           if(firstrender)
+           {
+               await JsRuntime.InvokeAsync<object>("initializeCarousel");
+               firstrender = false;
+           }
+       }
+    }*@
+
+
+<head>
+    <link href="css/Loading.css" rel="stylesheet" />
+    <style>
+        .e-btn, .e-css.e-btn {
+            -webkit-tap-highlight-color: transparent;
+            background-color: #ffffff;
+            border-color: #5f368d;
+            box-shadow: none;
+            color: #231e1e;
+            transition: box-shadow 280ms cubic-bezier(0.4, 0, 0.2, 1);
+            width: 80px;
+        }
+
+            .e-btn:disabled, .e-css.e-btn:disabled {
+                background-color: rgb(214 228 240 / 65%);
+                box-shadow: none;
+                color: #5f368d;
+                opacity: 0.65;
+                border-color: #5f368d;
+            }
+
+            .e-btn.e-primary:disabled, .e-css.e-btn.e-primary:disabled {
+                background-color: rgb(222 222 222 / 65%);
+                border-color: #5f368d;
+                box-shadow: none;
+                color: #787878;
+            }
+
+        .e-input-group:not(.e-success):not(.e-warning):not(.e-error):not(.e-float-icon-left).e-disabled, .e-input-group.e-float-icon-left:not(.e-success):not(.e-warning):not(.e-error).e-disabled .e-input-in-wrap, .e-input-group.e-control-wrapper:not(.e-success):not(.e-warning):not(.e-error):not(.e-float-icon-left).e-disabled, .e-input-group.e-control-wrapper.e-float-icon-left:not(.e-success):not(.e-warning):not(.e-error).e-disabled .e-input-in-wrap {
+            background: #fff;
+            color: #6c757d;
+        }
+
+        .e-input[disabled], .e-input-group .e-input[disabled], .e-input-group.e-control-wrapper .e-input[disabled], .e-input-group.e-disabled, .e-input-group.e-disabled input, .e-input-group.e-disabled input.e-input, .e-input-group.e-disabled textarea, .e-input-group.e-disabled textarea.e-input, .e-input-group.e-control-wrapper.e-disabled, .e-input-group.e-control-wrapper.e-disabled input, .e-input-group.e-control-wrapper.e-disabled input.e-input, .e-input-group.e-control-wrapper.e-disabled textarea, .e-input-group.e-control-wrapper.e-disabled textarea.e-input, .e-float-input.e-disabled input, .e-float-input.e-disabled textarea, .e-float-input input[disabled], .e-float-input input.e-disabled, .e-float-input textarea[disabled], .e-float-input textarea.e-disabled, .e-float-input.e-control-wrapper.e-disabled input, .e-float-input.e-control-wrapper.e-disabled textarea, .e-float-input.e-control-wrapper input[disabled], .e-float-input.e-control-wrapper input.e-disabled, .e-float-input.e-control-wrapper textarea[disabled], .e-float-input.e-control-wrapper textarea.e-disabled, .e-input-group.e-disabled span, .e-input-group.e-control-wrapper.e-disabled span {
+            cursor: text;
+        }
+
+        label {
+            display: inline-block;
+            margin-bottom: 0.01rem;
+        }
+
+        .e-grid .e-altrow {
+            background-color: #E8EEFA;
+        }
+
+        .e-grid .e-headercell {
+            background-image: linear-gradient( 0deg, #5f368d85, #B7D8DC);
+        }
+
+        .e-columnheader {
+            height: 30px;
+        }
+
+        .e-grid .e-rowcell {
+            font-size: 12px;
+        }
+
+        .e-grid .e-filterbarcell, .e-grid .e-filterbarcelldisabled {
+            background-image: linear-gradient( 0deg, #5f368d85, #B7D8DC);
+        }
+
+        .e-input-group:not(.e-success):not(.e-warning):not(.e-error):not(.e-float-icon-left).e-disabled, .e-input-group.e-float-icon-left:not(.e-success):not(.e-warning):not(.e-error).e-disabled .e-input-in-wrap, .e-input-group.e-control-wrapper:not(.e-success):not(.e-warning):not(.e-error):not(.e-float-icon-left).e-disabled, .e-input-group.e-control-wrapper.e-float-icon-left:not(.e-success):not(.e-warning):not(.e-error).e-disabled .e-input-in-wrap {
+            background: #fff;
+            color: #6c757d;
+            cursor: pointer;
+        }
+
+        .e-input[disabled], .e-input-group .e-input[disabled], .e-input-group.e-control-wrapper .e-input[disabled], .e-input-group.e-disabled, .e-input-group.e-disabled input, .e-input-group.e-disabled input.e-input, .e-input-group.e-disabled textarea, .e-input-group.e-disabled textarea.e-input, .e-input-group.e-control-wrapper.e-disabled, .e-input-group.e-control-wrapper.e-disabled input, .e-input-group.e-control-wrapper.e-disabled input.e-input, .e-input-group.e-control-wrapper.e-disabled textarea, .e-input-group.e-control-wrapper.e-disabled textarea.e-input, .e-float-input.e-disabled input, .e-float-input.e-disabled textarea, .e-float-input input[disabled], .e-float-input input.e-disabled, .e-float-input textarea[disabled], .e-float-input textarea.e-disabled, .e-float-input.e-control-wrapper.e-disabled input, .e-float-input.e-control-wrapper.e-disabled textarea, .e-float-input.e-control-wrapper input[disabled], .e-float-input.e-control-wrapper input.e-disabled, .e-float-input.e-control-wrapper textarea[disabled], .e-float-input.e-control-wrapper textarea.e-disabled, .e-input-group.e-control-wrapper.e-disabled span {
+            cursor: text;
+        }
+
+        .e-list-item:nth-child(even) {
+            font-size: 12px;
+        }
+
+        .e-list-item:nth-child(odd) {
+            background-color: #E8EEFA;
+            font-size: 12px;
+        }
+
+        .e-btn-sb-icons {
+            font-family: 'button-icons';
+            line-height: 1;
+            font-style: normal;
+            font-weight: normal;
+            font-variant: normal;
+            text-transform: none;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .e-multi-column.e-ddl.e-popup.e-popup-open td {
+            border: 1px solid rgba(0, 0, 0, 0.125);
+        }
+
+        #listbox-control {
+            width: 350px;
+            margin: auto;
+        }
+
+        .no-gutters {
+            margin-right: 0;
+            margin-left: 0;
+        }
+
+        .carousel-control-next-icon {
+            background-image: url(data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='%23fff' width='8' height='8' viewBox='0 0 8 8'%3e%3cpath d='M2.75 0l-1.5 1.5L3.75 4l-2.5 2.5L2.75 8l4-4-4-4z'/%3e%3c/svg%3e);
+        }
+
+        @@media screen and (max-width: 590px) {
+            #listbox-control {
+                width: 100%;
+            }
+        }
+
+        .card {
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+            transition: 0.3s;
+            border-radius: 5px;
+            padding: 20px;
+        }
+
+
+            .card:hover {
+                box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+            }
+
+
+        .container {
+            padding: 10px,16px;
+        }
+
+        .textbox-label {
+            font-weight: bold;
+        }
+
+        /* .carousel .carousel-item {
+                        height: 300px;
+                    }
+
+                    .carousel-item img {
+                        position: absolute;
+                        object-fit: contain;
+                        top: 0;
+                        left: 0;
+                        min-height: 300px;
+                    }*/
+
+        /* .carousel-inner {
+              padding: 1em;
+            }
+            .card {
+              margin: 0 0.5em;
+              box-shadow: 2px 6px 8px 0 rgba(22, 22, 26, 0.18);
+              border: none;
+            }
+            .carousel-control-prev,
+            .carousel-control-next {
+              background-color: #e1e1e1;
+              width: 6vh;
+              height: 6vh;
+              border-radius: 50%;
+              top: 50%;
+              transform: translateY(-50%);
+            }
+            @@media (min-width: 768px) {
+              .carousel-item {
+                margin-right: 0;
+                flex: 0 0 33.333333%;
+                display: block;
+              }
+              .carousel-inner {
+                display: flex;
+              }
+            }
+            .card .img-wrapper {
+                max-width: 100%;
+                height: 13em;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+            .card img {
+                max-height: 100%;
+            }
+            @@media (max-width: 767px) {
+              .card .img-wrapper {
+                height: 17em;
+              }
+            }*/
+
+        .carousel-inner img {
+            width: 100%;
+            height: 400px;
+            display: flex;
+            justify-content: center;
+            object-fit: cover;
+        }
+
+        .carousel-control-next:focus, .carousel-control-next:hover, .carousel-control-prev:focus, .carousel-control-prev:hover {
+            color: #fff;
+            text-decoration: none;
+            outline: 0;
+            opacity: .09;
+        }
+
+        .carousel-control-next, .carousel-control-prev {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            z-index: 1;
+            border: solid 5px transparent;
+            display: -ms-flexbox;
+            display: flex;
+            -ms-flex-align: center;
+            align-items: center;
+            -ms-flex-pack: center;
+            justify-content: center;
+            width: 15%;
+            height: 60px;
+            margin: auto;
+            background-color: transparent;
+            /*background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='%23c593d8' width='8' height='8' viewBox='0 0 8 8'%3e%3cpath d='M2.75 0l-1.5 1.5L3.75 4l-2.5 2.5L2.75 8l4-4-4-4z'/%3e%3c/svg%3e");*/
+            color: #fff;
+            text-align: center;
+            opacity: 1;
+            transition: opacity .15s ease;
+        }
+
+        /*.carousel-indicators button {
+            height: 10px !important;
+            width: 10px !important;
+            margin: 0 10px !important;
+            border-radius: 100%;
+
+            position: relative;
+            flex: 0 1 auto;
+
+            margin-top: 2%;
+
+            text-indent: -999px;
+            cursor: pointer;
+
+        }*/
+
+        .carousel-indicators [data-bs-target] {
+            position: relative;
+            width: 60px;
+            height: 6px;
+            border: none;
+            border-radius: 24px;
+            margin-bottom: 2%;
+        }
+
+            .carousel-indicators [data-bs-target] span {
+                content: ’’;
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 0;
+                height: 100%;
+                background: #7952b3;
+                border-radius: inherit;
+            }
+
+        @@media (min-width:320px) {
+        }
+
+        @@media (max-width:481px) {
+            .carousel-control-next-icon {
+                width: 40px;
+                height: 30px;
+                margin-top: 160px;
+                background-image: url(Images/Right-Arrow.png);
+            }
+
+            .carousel-control-prev-icon {
+                width: 40px;
+                height: 30px;
+                margin-top: 160px;
+                background-image: url(Images/Left-Arrow.png);
+            }
+
+            .carousel-control-next, .carousel-control-prev {
+                overflow: hidden;
+                height: 0;
+                padding-bottom: 46.406570842%;
+            }
+
+            .carousel slide {
+                margin: 10px;
+                outline: 1px solid #CCC;
+                /*background: #A00;*/
+                /*color: #FFF;*/
+                height: auto;
+                overflow: auto;
+            }
+
+            .carousel-caption {
+                padding-bottom: 1%;
+            }
+
+
+            .carousel-inner img {
+                width: 100%;
+                height: 160px;
+                object-fit: cover;
+                display: flex;
+                overflow: hidden;
+                justify-content: center;
+            }
+        }
+        /*@@media (max-width:641px)*/
+        @@media (max-width: 641px) {
+            .carousel-control-next, .carousel-control-prev {
+                overflow: hidden;
+                height: 0;
+                padding-bottom: 46.406570842%;
+                height: 60px;
+                margin: auto;
+            }
+
+
+            .carousel-control-next-icon {
+                width: 40px;
+                height: 30px;
+                margin-top: 200px;
+                background-image: url(Images/Right-Arrow.png);
+            }
+
+            .carousel-control-prev-icon {
+                width: 40px;
+                height: 30px;
+                margin-top: 200px;
+                background-image: url(Images/Left-Arrow.png);
+            }
+
+            .carousel slide {
+                margin: 10px;
+                outline: 1px solid #CCC;
+                /*background: #A00;*/
+                /*color: #FFF;*/
+                height: auto;
+                overflow: auto;
+            }
+
+            .carousel-caption {
+                padding-bottom: 1%;
+            }
+
+
+            .carousel-inner img {
+                width: 100%;
+                height: 160px;
+                object-fit: cover;
+                display: flex;
+                overflow: hidden;
+                justify-content: center;
+            }
+        }
+
+        @@media (max-width: 760px) {
+            .carousel-control-next, .carousel-control-prev {
+                overflow: hidden;
+                height: 0;
+                padding-bottom: 46.406570842%;
+                height: 60px;
+                margin: auto;
+            }
+
+
+            .carousel-control-next-icon {
+                width: 40px;
+                height: 30px;
+                margin-top: 230px;
+                background-image: url(Images/Right-Arrow.png);
+            }
+
+            .carousel-control-prev-icon {
+                width: 40px;
+                height: 30px;
+                margin-top: 230px;
+                background-image: url(Images/Left-Arrow.png);
+            }
+
+            .carousel slide {
+                margin: 10px;
+                outline: 1px solid #CCC;
+                /*background: #A00;*/
+                /*color: #FFF;*/
+                height: auto;
+                overflow: auto;
+            }
+
+            .carousel-caption {
+                padding-bottom: 1%;
+            }
+
+
+            .carousel-inner img {
+                width: 100%;
+                height: 160px;
+                object-fit: cover;
+                display: flex;
+                overflow: hidden;
+                justify-content: center;
+            }
+        }
+
+
+
+        .newtest {
+            display: flex;
+        }
+
+        .carousel-control-next-icon {
+            width: 40px;
+            height: 40px;
+            background-image: url(Images/Right-Arrow.png);
+        }
+
+        .carousel-control-prev-icon {
+            width: 40px;
+            height: 40px;
+            background-image: url(Images/Left-Arrow.png);
+        }
+
+        .e-input[disabled], .e-input-group .e-input[disabled], .e-input-group.e-control-wrapper .e-input[disabled], .e-input[disabled], .e-input-group .e-input[disabled], .e-input-group.e-control-wrapper .e-input[disabled], .e-input-group.e-disabled input, .e-input-group.e-disabled input.e-input, .e-input-group.e-control-wrapper.e-disabled input, .e-input-group.e-control-wrapper.e-disabled input.e-input{
+            font-weight: 500;
+        }
+
+        a.button1 {
+            display: inline-block;
+            padding: 0.35em 1.2em;
+            border: 0.1em solid #120b1e;
+            margin: 0 0.3em 0.3em 0;
+            border-radius: 0.12em;
+            box-sizing: border-box;
+            text-decoration: none;
+            font-family: 'Roboto',sans-serif;
+            font-weight: 400;
+            color: #ffffff;
+            text-align: center;
+            background: #120b1e;
+            transition: all 0.2s;
+        }
+
+            a.button1:hover {
+                color: #120b1e;
+                background: #ffffff;
+                border: 0.1em solid #120b1e;
+            }
+
+            @@media all and (max-width:30em){
+             a.button1{
+                display:block;
+                margin:0.4em auto;
+              
+             }
+            }
+
+        .list-group {
+            list-style: decimal inside;
+        }
+
+        .list-group-item {
+            display: list-item;
+        }
+    </style>
+</head>
+
+<div class="row" style="padding-bottom: 6px; border-bottom: solid 1px #000;">
+
+    @{
+        if (@user != 0)
+        {
+            <div class="col-md-5">
+                @if (category == "Administrator")
+                {
+                    <SfButton OnClick="@SaveItem" IconCss="Icon save" Disabled="@cSave" CssClass="e-outline">Save</SfButton>
+                    <SfButton IconCss="Icon edit" Disabled="@cEdit" OnClick="@EditJob" CssClass="e-outline">Edit</SfButton>
+                }
+                <SfButton IconCss="Icon preview" OnClick="@PreviewClick" CssClass="e-outline">Print</SfButton>
+                <SfButton IconCss="Icon back" OnClick="@backJob" CssClass="e-outline">Back</SfButton>
+            </div>
+        }
+
+        <div class="col-md-4">
+            <BlazorStrap.BSAlert Color="BlazorStrap.Color.Success" @bind-IsOpen="@IsSave" AutoHide="true">
+                Successfully Saved <a><i class="fa fa-check" aria-hidden="true"></i></a>
+            </BlazorStrap.BSAlert>
+            <BlazorStrap.BSAlert Color="BlazorStrap.Color.Danger" @bind-IsOpen="@IsFailed" AutoHide="true">
+                Failed Saving Customer data <a><i class="fa alert" aria-hidden="true"></i></a>
+            </BlazorStrap.BSAlert>
+        </div>
+
+        <div class="col-md-3">
+            <label style="color: #014164; font-size: large; display: flex; justify-content: right; font-weight: bold; ">JOB DETAILS</label>
+        </div>
+    }
+</div>
+
+<div class="card" style="margin-top:5px;">
+    <div class="row" style="padding-top:1%">
+        <div class="col-md-4 col-sm-3">
+            <label class="textbox-label">Job No.</label>
+            <SfTextBox CssClass="e-outline" @bind-Value="job.VNo" ShowSpinButton="false" Enabled="@TextEnable" Placeholder=""></SfTextBox>
+        </div>
+
+        <div class="col-md-4 col-sm-3">
+            <label class="textbox-label">Date</label>
+            <SfDatePicker TValue="DateTime?" @bind-Value="@job.VDate" Format="dd/MM/yyyy" Enabled="@TextEnable" ShowClearButton="true"></SfDatePicker>
+        </div>
+
+
+        <div class="col-md-4 col-sm-3">
+            <label class="textbox-label" style="color:red;">Status</label>
+            <SfComboBox TValue="string" AllowCustom="false" TItem="string" @bind-Value="@job.Field10" Placeholder="Select" Enabled="@TextEnable" PopupHeight="230px" DataSource="@JobStatus">
+            </SfComboBox>
+        </div>
+    </div>
+
+    <div class="row" style="padding-top:1%">
+        <div class="col-md-4 col-sm-3">
+            <label class="textbox-label">Customer</label>
+            <SfComboBox TValue="string" @ref="@ComboObj" Query="@CustomerQuery" AllowCustom="false" EnableVirtualization="true" TItem="dtAccounts" Enabled="@TextEnable" @bind-Value="@job.PartyName" CssClass="e-multi-column" AllowFiltering="true" DataSource="@customer" PopupHeight="300px" PopupWidth="300px">
+                <ComboBoxTemplates TItem="dtAccounts">
+                    <HeaderTemplate>
+                        <table><tr><th style="width:100px">Code</th><th style="width:200px">Customer Name</th></tr></table>
+                    </HeaderTemplate>
+                    <ItemTemplate>
+                        <table><tbody><tr><td style="width:100px">@((context as dtAccounts).AccountCode)</td><td style="width:200px">@((context as dtAccounts).AccountName)</td></tr> </tbody></table>
+                    </ItemTemplate>
+                </ComboBoxTemplates>
+                <ComboBoxFieldSettings Text="AccountName" Value="AccountName"></ComboBoxFieldSettings>
+                <ComboBoxEvents Filtering="@OnFilteringCus" TValue="string" TItem="dtAccounts" OnValueSelect="OnChangeCustomer"></ComboBoxEvents>
+            </SfComboBox>
+
+        </div>
+
+        <div class="col-md-4 col-sm-3">
+            <label class="textbox-label">Telephone</label>
+            <SfTextBox CssClass="e-outline" @bind-Value="@job.Tel" Enabled="@TextEnable" Placeholder=""></SfTextBox>
+        </div>
+
+
+        <div class="col-md-4 col-sm-3">
+            <label class="textbox-label">Email</label>
+            <SfTextBox CssClass="e-outline" @bind-Value="@job.Field12" Enabled="@TextEnable" Placeholder=""></SfTextBox>
+        </div>
+    </div>
+
+
+    <div class="row" style="padding-top:1%">
+        <div class="col-md-4 col-sm-3">
+            <label class="textbox-label">Company</label>
+            @*<SfTextBox CssClass="e-outline" @bind-Value="@job.Field1" Enabled="@TextEnable" Placeholder=""></SfTextBox>*@
+
+            <SfComboBox TValue="string" AllowCustom="false" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" TItem="string" @bind-Value="@job.Field1" Placeholder="" Enabled="@TextEnable" PopupHeight="230px" DataSource="@Company">
+            </SfComboBox>
+        </div>
+
+        <div class="col-md-4 col-sm-3">
+            <label class="textbox-label">Color</label>
+
+
+            <SfComboBox TValue="string" AllowCustom="false" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" TItem="string" @bind-Value="@job.Field2" Placeholder="" Enabled="@TextEnable" PopupHeight="230px" DataSource="@CarColor">
+            </SfComboBox>
+        </div>
+
+
+        <div class="col-md-4 col-sm-3">
+            <label class="textbox-label">VIN</label>
+            <SfComboBox TValue="string" AllowFiltering="true" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" TItem="string" @bind-Value="@job.Field3" Placeholder="" Enabled="@TextEnable" PopupHeight="230px" DataSource="@vinno">
+            </SfComboBox>
+        </div>
+    </div>
+
+    <div class="row" style="padding-top:1%">
+        <div class="col-md-4 col-sm-3">
+            <label class="textbox-label">Plate No</label>
+            <SfTextBox CssClass="e-outline" @bind-Value="@job.Field4" Enabled="false" Placeholder=""></SfTextBox>
+        </div>
+
+        <div class="col-md-4 col-sm-3">
+            <label class="textbox-label">Model</label>
+            <SfTextBox CssClass="e-outline" @bind-Value="@job.Field14" Enabled="@TextEnable" Placeholder=""></SfTextBox>
+        </div>
+
+
+        <div class="col-md-4 col-sm-3">
+            <label class="textbox-label">KM</label>
+            <SfTextBox CssClass="e-outline" @bind-Value="@job.Field7" Enabled="@TextEnable" Placeholder=""></SfTextBox>
+        </div>
+    </div>
+
+    <div class="row" style="padding-top:1%">
+        <div class="col-md-8 col-sm-6">
+            <label class="textbox-label">Remarks</label>
+            <SfTextBox CssClass="e-outline" @bind-Value="@vehicleCheck.Remarks" Enabled="@TextEnable" Placeholder=""></SfTextBox>
+        </div>
+
+        <div class="col-md-4 col-sm-3">
+            <label class="textbox-label">Required Date</label>
+            <SfDatePicker CssClass="e-outline" Format="dd/MM/yyyy" @bind-Value="@job.Date5" Enabled="@TextEnable" Placeholder=""></SfDatePicker>
+        </div>
+
+    </div>
+
+
+    @*</div>*@
+
+</div>
+
+<div class="row mt-3 newtest">
+
+    <div class="col-md-6">
+
+        <div class="card">
+
+            <div class="container">
+                <h4 style="padding-top:10px;">Tools</h4>
+                @*<p>Verified Details</p>*@
+            </div>
+
+            <table class="table table-bordered">
+
+                <tbody>
+                    <tr>
+                        <th scope="row">Registration Card Available</th>
+                        <td> <SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@vehicleCheck.regitn"></SfCheckBox></td>
+
+                    </tr>
+                    <tr>
+                        <th scope="row">SpareTyre Present</th>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@vehicleCheck.Spare"></SfCheckBox></td>
+
+                    </tr>
+                    <tr>
+                        <th scope="row">Warning Triangle Present</th>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@vehicleCheck.warning"></SfCheckBox></td>
+
+                    </tr>
+                    <tr>
+                        <th scope="row">First Aid Kit Present</th>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@vehicleCheck.firstaid"></SfCheckBox></td>
+
+                    </tr>
+
+                    <tr>
+                        <th scope="row">Jack Present</th>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@vehicleCheck.jackprsnt"></SfCheckBox></td>
+
+                    </tr>
+                    <tr>
+                        <th scope="row">Keep Removed Kit Present</th>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@vehicleCheck.keeprmd"></SfCheckBox></td>
+
+
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+
+
+
+
+
+
+
+
+    </div>
+
+    <div class="col-md-6">
+
+        <div class="card">
+
+            <div class="container">
+                <h4 style="padding-top:10px;">Complaints</h4>
+                @*<p>Verified Details</p>*@
+            </div>
+
+            <SfListBox Value="@selectArray" AllowFiltering="true" FilterBarPlaceholder="Search" FilterType="Syncfusion.Blazor.DropDowns.FilterType.Contains" Height="290px" DataSource="@MaincheckList" @ref="ListBoxObj" TItem="WsvehicleCheckMaster" TValue="int[]">
+                <ListBoxSelectionSettings ShowCheckbox="true"></ListBoxSelectionSettings>
+                <ListBoxFieldSettings Text="Service" Value="Id"></ListBoxFieldSettings>
+                <ListBoxEvents TValue="int[]" ValueChange="@SelectedItems" TItem="WsvehicleCheckMaster"></ListBoxEvents>
+            </SfListBox>
+
+        </div>
+
+
+    </div>
+
+
+
+</div>
+
+<div class="card">
+
+    @*<div class="col-md-12" style="height:150px;">*@
+    <div class="col-md-12  mx-2">
+        
+            <h4 style="padding-top:10px;padding-left:0;">Images</h4>
+        
+        
+
+        <table class="table table-bordered">
+
+            <tbody>
+
+                @{
+                    for (int i = 0; i < imagename.Count; i++)
+                    {
+                        <tr>
+                            <td class="col-12"><img style="height:330px;object-fit:cover;width:100%" src="@imagename[i]"></td>
+                            
+                        </tr>
+                        <tr>
+                            <td style="height:40px;padding:0px;margin:0px; text-align:center; vertical-align:middle"><a href="@imagename[i]" class="button1 text-center" target="_blank">Large View</a></td>
+                        </tr>
+                    }
+                }
+
+            </tbody>
+        </table>
+
+
+
+
+
+
+        @*<div id="carouselExampleSlidesOnly" class="carousel slide" data-interval="5000" data-ride="carousel">
+            <div class="carousel-indicators">
+                @for (int i = 0; i < imagename.Count; i++)
+                {
+                    var itemClass = i == 0 ? "active" : "";
+
+                    //<button type="button" data-bs-target="#carouselExampleSlidesOnly" data-bs-slide-to="@i" class="@itemClass" aria-current="true" aria-label="Slide 1"></button>
+                    <button type="button" data-bs-target="#carouselExampleSlidesOnly" data-bs-slide-to="@i" class="@itemClass" aria-current="true" aria-label="Slide 1"></button>
+
+                }
+            </div>
+
+
+
+            <div class="carousel-inner">
+
+
+                <div id="carouselExampleSlidesOnly" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-inner">
+                        @for (int i = 0; i < imagename.Count; i++)
+                        {
+                            var item = imagename[i];
+                            var itemClass = i == 0 ? "item active" : "item";
+                            <div class="carousel-item @itemClass">
+                                <img class="img-fluid" src="@imagename[i]" alt="First slide">
+                                <div class="carousel-caption">
+                                    @{var imageno = i + 1; }
+
+                                    <p style="font-weight:bold;color:#fff"><a href="@imagename[i]"  target="_blank">Open Image</a>  @imageno / @imagename.Count </p>
+
+
+
+                                </div>
+
+                            </div>
+                        }
+
+                    </div>
+
+                    <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleSlidesOnly" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Prev</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleSlidesOnly" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+
+
+                    </button>
+                </div>
+            </div>
+        </div>*@
+
+
+    </div>
+</div>
+
+<div class="row mt-3 newtest">
+
+    <div class="col-md-6">
+
+        <div class="card">
+
+            <div class="container">
+                <h4 style="padding-top:10px;padding-left:0;">Service</h4>
+                @*<p>Verified Details</p>*@
+            </div>
+
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+
+                        <th scope="col"></th>
+                        <th scope="col">Check </th>
+                        <th scope="col">Change</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th scope="row">E-Oil</th>
+                        <td> <SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CCEoil"></SfCheckBox></td>
+                        <td> <SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CHEoil"></SfCheckBox></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">E-Filter</th>
+                        <td> <SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CCEfilter"></SfCheckBox></td>
+                        <td> <SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CHEfilter"></SfCheckBox></td>
+
+                    </tr>
+                    <tr>
+                        <th scope="row">G-Oil</th>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CCGoil"></SfCheckBox></td>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CHGoil"></SfCheckBox></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">G-Filter</th>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CCGfilter"></SfCheckBox></td>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CHGfilter"></SfCheckBox></td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">F-Brake</th>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CCFbrake"></SfCheckBox></td>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CHFbrake"></SfCheckBox></td>
+
+                    </tr>
+                    <tr>
+                        <th scope="row">F-Drum</th>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CCFdrum"></SfCheckBox></td>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CHFdrum"></SfCheckBox></td>
+
+
+                    </tr>
+                    <tr>
+                        <th scope="row">R-Brake</th>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CCRbrake"></SfCheckBox></td>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CHRbrake"></SfCheckBox></td>
+
+                    </tr>
+                    <tr>
+                        <th scope="row">R-Drum</th>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CCRdrum"></SfCheckBox></td>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CHRdrum"></SfCheckBox></td>
+
+
+                    </tr>
+                    <tr>
+                        <th scope="row">F-Filter</th>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CCFfilter"></SfCheckBox></td>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CHFfilter"></SfCheckBox></td>
+
+                    </tr>
+                    <tr>
+                        <th scope="row">F-Pump</th>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CCFfump"></SfCheckBox></td>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CHFfump"></SfCheckBox></td>
+
+
+                    </tr>
+                    <tr>
+                        <th scope="row">Air Filter</th>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CCAirfilter"></SfCheckBox></td>
+                        <td><SfCheckBox Disabled="@TextEnableChkbox" @bind-Checked="@checkBox1.CHAirfilter"></SfCheckBox></td>
+
+
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+
+
+
+
+
+
+
+
+    </div>
+
+    <div class="col-md-6">
+
+        <div class="card">
+            <div class="row">
+
+                @*<div class="col-md-6 col-sm-4">
+                    <label class="textbox-label">Job Model</label>
+                    <SfTextBox CssClass="e-outline" @bind-Value="@job.Field11" Enabled="false" Placeholder=""></SfTextBox>
+                </div>*@
+
+                <div class="col-md-12 col-sm-6">
+                    <label class="textbox-label">Checking Charge</label>
+                    <SfNumericTextBox CssClass="e-outline" @bind-Value="@vehicleCheck.CheckingCharge" Format="###.00" ShowSpinButton="false" Enabled="false" Placeholder=""></SfNumericTextBox>
+                </div>
+            </div>
+            <div class="row mb-3">
+
+                @*<div class="col-md-6 col-sm-4">
+                    <label class="textbox-label">Advisor</label>
+                    <SfTextBox CssClass="e-outline" @bind-Value="@job.Field8" Enabled="false" Placeholder=""></SfTextBox>
+                </div>
+
+
+                <div class="col-md-6 col-sm-4">
+                    <label class="textbox-label">Tested By</label>
+                    <SfTextBox CssClass="e-outline" @bind-Value="@job.Field9" Enabled="false" Placeholder=""></SfTextBox>*@
+                </div>
+
+
+            </div>
+            
+            <div class="row mb-3">
+
+                <div class="col-md-12 col-sm-6">
+                    <h4>Decleration</h4>
+
+                    <ol class="list-group list-group-numbered">
+
+                        <li class="list-group-item font-weight-bold"><a href="Doc/TermsnCondition.pdf" target="_blank">Terms & Conditions</a></li>
+                        <li class="list-group-item font-weight-bold">I the undersigned declare that I had Removed all my Precious Properties</li>
+                        <li class="list-group-item font-weight-bold">I hereby Acknowledge about condition behind</li>
+
+
+                    </ol>
+
+                </div>
+
+
+               
+
+
+            </div>
+
+            <div class="row">
+
+                
+
+            </div>
+
+
+
+            <div class="row d-flex justify-content-center">
+
+                <div class="container">
+                    <h4 style="padding-top:10px;">Signature</h4>
+                </div>
+
+
+
+                <img class="img-fluid w-50 border border-1" src="@String.Format("data:image/jpg;base64,{0}", @setSignature)" />
+
+            </div>
+
+
+
+
+
+     </div>
+
+
+ 
+    
+</div>
+
+
+@code{
+    [Parameter]
+    public string ID { get; set; }
+
+    private bool isChecked = true;
+
+    public bool cSave { get; set; } = true;
+
+    public Query CustomerQuery { get; set; } = new Query().Take(20);
+    private SfComboBox<string, dtAccounts> ComboObj;
+
+    int[] selectArray = new int[100];
+
+    int[] _selectArray = new int[100];
+
+    int[] selectedItems = new int[250];
+    SfListBox<int[], WsvehicleCheckMaster> ListBoxObj;
+
+    public bool cEdit { get; set; } = false;
+
+    public bool IsSave = false;
+    public bool IsFailed = false;
+
+    public string setSignature { get; set; }
+
+    public bool TextEnable { get; set; } = false;
+    public bool TextEnableChkbox { get; set; } = true;
+    public const string imagenamepart = "_PHTO_VEH_IMG";
+    dtVoucherWeb web = new dtVoucherWeb();
+    dtJobRegister job = new dtJobRegister();
+    WsBodyCheck body = new WsBodyCheck();
+    VehiclecheckReturn vehicleCheck = new VehiclecheckReturn();
+    dtVehicleCheckbox1 checkBox1 = new dtVehicleCheckbox1();
+    List<WsvehicleCheckMaster> checkList = new List<WsvehicleCheckMaster>();
+    List<WsvehicleCheckMaster> _checkList = new List<WsvehicleCheckMaster>();
+    List<WsvehicleCheckMaster> MaincheckList = new List<WsvehicleCheckMaster>();
+    List<int> DeletecheckList = new List<int>();
+    List<VehdataFromMaster> testlis = new List<VehdataFromMaster>();
+    string getVno, ImagenameStart;
+
+    List<string> imagepaths = new List<string>();
+    List<string> imagename = new List<string>();
+    List<string> vinno = new List<string>();
+    public IEnumerable<string> JobStatus = new List<string>();
+    List<string> Company = new List<string>();
+    List<string> CarColor = new List<string>();
+    long decryptID;
+    public const string termsPDF= "Muploads/terms.pdf";
+
+
+    List<WSChecklistMaster> newList = new List<WSChecklistMaster>();
+
+    List<int> tempNum = new List<int>();
+
+    List<dtAccounts> customer = new List<dtAccounts>();
+
+    string mode = "";
+
+    int currentCount = 0, BranchID, user;
+    bool firstRender = true;
+
+    string category = "";
+    int NavHide = 1;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        BranchID = await sessionStorage.GetItemAsync<int>("BranchID");
+        user = await sessionStorage.GetItemAsync<int>("LocalSessionUserId");
+        category = await sessionStorage.GetItemAsync<string>("Category");
+
+
+        vinno = await _job.getCombos("VINNO");
+        JobStatus = await _job.getCombos("Jobstatus");
+        Company = await _job.getCombos("Car Type");
+        CarColor = await _job.getCombos("Carcolour");
+        checkList = await _job.GetCheckListVehicle();
+        customer = await _job.GetCustomers();
+
+
+        if (ID != "")
+        {
+            await init_view();
+        }
+        else
+        {
+
+            if (user != 0)
+            {
+                init_new();
+            }
+            else
+            {
+
+                NavigationManager.NavigateTo("Login");
+            }
+
+        }
+
+    }
+
+
+
+
+    private async Task OnFilteringCus(Syncfusion.Blazor.DropDowns.FilteringEventArgs args)
+    {
+
+        args.PreventDefaultAction = true;
+        var query = new Query().Where(new WhereFilter() { Field = "AccountName", Operator = "contains", value = args.Text, IgnoreCase = true });
+        query = !string.IsNullOrEmpty(args.Text) ? query : new Query();
+        await ComboObj.FilterAsync(customer, query);
+    }
+
+    public void OnChangeCustomer(SelectEventArgs<dtAccounts> args)
+    {
+        if (args.ItemData != null)
+        {
+            job.AccountID = args.ItemData.AccountID;
+            job.Address = args.ItemData.Address1;
+            job.Tel = args.ItemData.Mobile;
+            //job.Field12=args.ItemData.
+
+
+
+        }
+    }
+
+    public void EditJob()
+    {
+        mode = "Update";
+        cSave = false;
+        TextEnable = true;
+        TextEnableChkbox = false;
+
+        MaincheckList = checkList;
+
+    }
+
+    public void backJob()
+    {
+        NavigationManager.NavigateTo("JobRegister");
+    }
+
+    private void SelectedItems(ListBoxChangeEventArgs<int[], WsvehicleCheckMaster> args)
+    {
+        // selectArray.Append(args.Value.Length);
+
+        selectArray = args.Value;
+
+    }
+
+    public async Task init_view()
+    {
+        try
+        {
+            decryptID = Convert.ToInt64(ID) / 3;
+            job = await _job.GetJobByID(decryptID);
+
+            if (job.VNo != "" && job.Field4 != "")
+            {
+
+
+                int inVno = Convert.ToInt32(job.VNo);
+
+                var isResult = await _job.CheckJobID(inVno);
+
+
+
+                if (isResult == "Success")
+                {
+                    vehicleCheck = await _job.GetVehicleCheck(inVno);
+
+
+                    if (vehicleCheck.checkListResult.Count != 0)
+                    {
+                        selectArray = vehicleCheck.checkListResult.Select(s => s.id).ToArray();
+                        _selectArray = selectArray;
+
+                        foreach (var dt in vehicleCheck.checkListResult)
+                        {
+                            _checkList.Add(new WsvehicleCheckMaster { Id = dt.id, Service = dt.service });
+                        }
+
+                        MaincheckList = _checkList;
+                    }
+
+
+
+
+                    ImagenameStart = job.VNo + imagenamepart;
+
+                    imagepaths = await _job.getVehicleImages(ImagenameStart);
+
+                    //imagepaths.Add("E:\\Orison Android\\ApiWS\\wwwroot\\uploads\\15836_PHTO_VEH_IMG1.png");
+                    //imagepaths.Add("E:\\Orison Android\\ApiWS\\wwwroot\\uploads\\15836_PHTO_VEH_IMG2.png");
+                    //imagepaths.Add("E:\\Orison Android\\ApiWS\\wwwroot\\uploads\\15836_PHTO_VEH_IMG3.png");
+
+
+                    if (imagepaths.Safe().Any())
+                    {
+
+                        foreach (var s in imagepaths)
+                        {
+                            var filename = Path.GetFileName(s);
+                            imagename.Add("Muploads/" + filename);
+                        }
+                    }
+
+
+
+                    //imagepaths.Clear();
+
+
+
+                    string img = Convert.ToBase64String(vehicleCheck.Signature);
+                    setSignature = img;
+
+
+
+                    (checkBox1.CCEfilter, checkBox1.CHEfilter) = ConvertToBooleans(vehicleCheck.efilter);
+                    (checkBox1.CCEoil, checkBox1.CHEoil) = ConvertToBooleans(vehicleCheck.eoil);
+                    (checkBox1.CCGoil, checkBox1.CHGoil) = ConvertToBooleans(vehicleCheck.goil);
+                    (checkBox1.CCFbrake, checkBox1.CHFbrake) = ConvertToBooleans(vehicleCheck.fbrake);
+                    (checkBox1.CCGfilter, checkBox1.CHGfilter) = ConvertToBooleans(vehicleCheck.gfilter);
+                    (checkBox1.CCFdrum, checkBox1.CHFdrum) = ConvertToBooleans(vehicleCheck.fdrum);
+                    (checkBox1.CCRbrake, checkBox1.CHRbrake) = ConvertToBooleans(vehicleCheck.rbrake);
+                    (checkBox1.CCRdrum, checkBox1.CHRdrum) = ConvertToBooleans(vehicleCheck.rdrum);
+                    (checkBox1.CCFfilter, checkBox1.CHFfilter) = ConvertToBooleans(vehicleCheck.ffilter);
+                    (checkBox1.CCFfump, checkBox1.CHFfump) = ConvertToBooleans(vehicleCheck.ffum);
+                    (checkBox1.CCAirfilter, checkBox1.CHAirfilter) = ConvertToBooleans(vehicleCheck.airfilter);
+
+                }
+
+            }
+            else
+            {
+                //
+            }
+
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected (bool x, bool y) ConvertToBooleans(string value)
+    {
+        if (value == "both")
+            return (true, true);
+        if (value == "checked")
+            return (true, false);
+        if (value == "changed")
+            return (false, true);
+        return (false, false);
+    }
+
+    public void init_new()
+    {
+        //
+    }
+
+
+
+    public async void SaveItem()
+    {
+
+        web.job = job;
+        web.vehiclecheck = vehicleCheck;
+        //web.vehiclecheck.checkListResult = newList;
+
+        vehicleCheck.eoil = ConvertFromBooleans(checkBox1.CCGoil, checkBox1.CHGoil);
+        vehicleCheck.efilter = ConvertFromBooleans(checkBox1.CCEfilter, checkBox1.CHEfilter);
+        vehicleCheck.goil = ConvertFromBooleans(checkBox1.CCGoil, checkBox1.CHGoil);
+        vehicleCheck.gfilter = ConvertFromBooleans(checkBox1.CCGfilter, checkBox1.CHGfilter);
+        vehicleCheck.fbrake = ConvertFromBooleans(checkBox1.CCFbrake, checkBox1.CHFbrake);
+        vehicleCheck.fdrum = ConvertFromBooleans(checkBox1.CCFdrum, checkBox1.CHFdrum);
+        vehicleCheck.rbrake = ConvertFromBooleans(checkBox1.CCRbrake, checkBox1.CHRbrake);
+        vehicleCheck.rdrum = ConvertFromBooleans(checkBox1.CCRdrum, checkBox1.CHRdrum);
+        vehicleCheck.ffilter = ConvertFromBooleans(checkBox1.CCFfilter, checkBox1.CHFfilter);
+        vehicleCheck.ffum = ConvertFromBooleans(checkBox1.CCFfump, checkBox1.CHFfump);
+        vehicleCheck.airfilter = ConvertFromBooleans(checkBox1.CCAirfilter, checkBox1.CHAirfilter);
+
+
+
+        if (job.Field3 != "")
+        {
+            var exists = vinno.Exists(s => s.Contains(job.Field3));
+            job.verifyVIN = exists == true ? job.verifyVIN = true : job.verifyVIN = false;
+        }
+
+        if (selectArray.Length != 0)
+        {
+
+            var ViewList = _selectArray.Select(s => s).ToList();
+            var ChangedList = selectArray.Select(s => s).ToList();
+
+            var shifts = ViewList.Where(s => !ChangedList.Where(es => es.Equals(ViewList)).Any());
+
+            foreach (var dt in shifts)
+            {
+                var exists = ChangedList.Exists(s => s.Equals(dt));
+                if (exists == false)
+                {
+                    newList.Add(new WSChecklistMaster { Value = false, description = dt, Rowstate = "Update" });
+                }
+
+            }
+
+            var result = ChangedList.Where(s => !ViewList.Where(es => es.Equals(ViewList)).Any());
+
+            foreach (var dt in result)
+            {
+                var exists = ViewList.Exists(s => s.Equals(dt));
+                if (exists == false)
+                {
+                    newList.Add(new WSChecklistMaster { Value = true, PlateNo = job.Field4, JobID = Convert.ToInt32(job.VNo), description = dt, Rowstate = "Insert" });
+                }
+            }
+
+            web.newList = newList;
+
+        }
+
+
+
+        //var json2 = Newtonsoft.Json.JsonConvert.SerializeObject(web);
+
+        if (mode == "Update")
+        {
+            HttpResponseMessage post = await _job.UpdateJobDetails(web);
+            if (post.IsSuccessStatusCode)
+            {
+                ClearFields();
+                cSave = true;
+                IsSave = true;
+            }
+            else
+            {
+                IsFailed = true;
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+
+    }
+
+    public void ClearFields()
+    {
+        job = new dtJobRegister();
+
+        web = new dtVoucherWeb();
+
+        vehicleCheck = new VehiclecheckReturn();
+
+        selectArray = new int[100];
+        checkBox1 = new dtVehicleCheckbox1();
+        job.PartyName = "";
+        setSignature = "";
+        InvokeAsync(StateHasChanged);
+    }
+
+
+
+    protected string ConvertFromBooleans(bool check, bool change)
+    {
+        string value = "";
+        if (check && change)
+        {
+            value = "both";
+        }
+        else if (!check && !change)
+        {
+            value = "none";
+        }
+        else if (check)
+        {
+            value = "checked";
+        }
+        else if (change)
+        {
+            value = "Changed";
+        }
+        return value;
+    }
+
+
+
+    public async Task PreviewClick()
+    {
+        if(decryptID != 0)
+        {
+            string Url = "ReportViewer?ID=" + decryptID + "&ReportName=Job Report";
+            await JSRuntime.InvokeAsync<object>("open", Url, "_blank");
+        }
+    }
+}
+
+
+
+

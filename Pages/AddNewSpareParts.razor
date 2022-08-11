@@ -1,0 +1,597 @@
+﻿@page "/AddNewSpareParts/{id}"
+@using Syncfusion.Blazor.Buttons;
+@using BlazorStrap;
+@using AdminDiplomacyAPP.Entities
+@using Syncfusion.Blazor.Popups;
+@using Syncfusion.Blazor.Inputs;
+@using Syncfusion.Blazor.Grids;
+@using Syncfusion.Blazor.DropDowns;
+@using Syncfusion.Blazor.Spinner
+@using System.IO;
+@inject IJSRuntime JSRuntime;
+@inject AdminDiplomacyAPP.Contract.IItemMasterManager _ItemMasterManager
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+@inject NavigationManager _nav
+@inject HttpClient Http
+<head>
+    <link href="css/OrisonSyncfusionStyles.css" rel="stylesheet" />
+
+</head>
+<div class="row" style=" border-bottom: solid 1px #000; padding-bottom: 8px; padding-top: 4px;">
+    <div class="col-md-4">
+        <SfButton IconCss="Icon add" CssClass="e-btn" @onclick="@AddNew" Content="New" />
+        <SfButton IconCss="Icon back" CssClass="e-btn" @onclick="@GoToMaster" Content="Back" />
+    </div>
+    <div class="col-md-4">
+        <BSAlert Color="Color.Success" @bind-IsOpen="@IsSave" AutoHide="true">
+            Successfully Saved  <a><i class="fa fa-check" aria-hidden="true"></i></a>
+        </BSAlert>
+    </div>
+    <div class="col-md-4" style="text-align:right;">
+        <label style="color: #014164; font-size: large; display: flex; justify-content: right; font-weight: bold; ">@Heading</label>
+    </div>
+</div>
+<div class="pt-2">
+    <div class="card-body1">
+
+        <div class="row pt-1">
+
+            <div class="col-md-4">
+                <label class="label">Item Code</label>
+                <SfTextBox Placeholder="Item Code" @bind-value="@Item.ItemCode" EnableRtl="false" Readonly="true"></SfTextBox>
+            </div>
+            <div class="col-md-4">
+                <label class="label">Item Name(English)</label>
+                <SfTextBox Placeholder="Item Name" @bind-value="@Item.ItemName"></SfTextBox>
+            </div>
+            <div class="col-md-4">
+                <label class="label">Item Name(Arabic)</label>
+                <SfTextBox EnableRtl="true" Placeholder="Item Name" @bind-value="@Item.ItemNameAr"></SfTextBox>
+            </div>
+        </div>
+        <div class="row pt-2">
+            <div class="form-group col-md-4">
+
+
+                <!--<SfUploader @ref="UploderObj" ID="UploadFiles" AllowedExtensions=".png,.jpeg,.jpg,.PNG" AutoUpload="true" Multiple="false" ShowFileList="true">
+                    <UploaderEvents Success="OnSuccess"  FileSelected="OnFileSelected" ValueChange="onChange"></UploaderEvents>
+                    <UploaderTemplates>
+                        <Template>
+                            <span class="wrapper">
+                                <img class="upload-image" alt="Image"
+                                     src="@(files.Count >0 ? files.Where(item=>item.Name == context.Name)?.FirstOrDefault()?.Path : string.Empty)">
+                            </span>
+                            <div class="name file-name" title="@(context.Name)">@(context.Name)</div>
+                            <div class="file-size">@(context.Size) Bytes</div>
+                            <span class="e-icons e-file-remove-btn remove" id="removeIcon" title="Remove"></span>-->
+                            @*<span class="e-upload-icon e-icons e-file-remove-btn" title="Upload" id="iconUpload" @onclick="@uploadFile"></span>*@
+                        <!--</Template>
+                    </UploaderTemplates>-->
+                    @*<UploaderAsyncSettings SaveUrl="api/Upload/Save" RemoveUrl="api/Upload/Remove"></UploaderAsyncSettings>*@
+                <!--</SfUploader>-->
+
+            <SfUploader ID="UploadFiles" @ref="UploaderObj" MaxFileSize="2000000" AllowedExtensions=".jpeg,.png,.PNG,.jpg" Multiple="false" AutoUpload="true" ShowFileList="true">
+                <UploaderEvents Success="OnSuccess" FileSelected="OnFileSelected" ></UploaderEvents>
+
+                <UploaderAsyncSettings SaveUrl="api/Upload/Save" RemoveUrl="api/Upload/Remove"></UploaderAsyncSettings>
+            </SfUploader>
+            </div>
+            <div class="form-group col-md-4">
+                <SfButton IconCss="Icon save" CssClass="e-btn" @onclick="@Save" disabled=@IsTaskRunning Content="Save" />
+            </div>
+        </div>
+    </div>
+</div>
+@if (mode == 0)
+{
+    <div class="row" style="padding-left:10px;padding-top:5px">
+        <div class="col-xl-12 col-md-12 col-lg-12">
+            <div class="table-responsive" style="position: relative; min-height: 550px; min-width: 300px">
+               
+                    @if (Isload == true)
+                    {
+                        <div id="container">
+                            <div class="row">
+                                <div spin-row w-100>
+                                    <div class="spin-row">
+                                        <div class="content">
+                                            <SfSpinner Size="40" Label="" Type="SpinnerType.Bootstrap4" Visible="Isload"></SfSpinner>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                      </div>
+                    }
+
+                else
+                {
+                    <SfGrid GridLines="GridLine.Both" DataSource="@GridMaster" @ref="@gvItem" Height="359" AllowPaging="true">
+                        <GridPageSettings PageSize="50"></GridPageSettings>
+                        <GridColumns>
+                            <GridColumn Width="15">
+                                <Template>
+                                    @{ var ID = (context as DtItemMaster).ID;
+                                        <a @onclick="@(async () => { await GetByIddelete(ID); })"><img src="Images/delete16_16.gif" style="height:20px;width:20px" /></a>
+                                    }
+                                </Template>
+                            </GridColumn>
+                            <GridColumn Width="15">
+                                <Template>
+                                    @{ var ID = (context as DtItemMaster).ID;
+                                        <a @onclick="@(async () => { await GetById(ID); })"><img src="Images/Pencil1.png" style="height:20px;width:20px" /></a>
+                                    }
+                                </Template>
+                            </GridColumn>
+                            <GridColumn Width="16">
+                                <Template>
+                                    @{ var name = (context as DtItemMaster).FileName;
+                                        string _FilePath= string.Concat(url,name);
+                                        //string _FilePath = url + name;
+                                        <a @onclick="@(() => { popClick(_FilePath); })" title="@name" style="cursor:pointer;"><img src="@_FilePath" style="height:25px;width:25px" /></a>
+                                    }
+                                </Template>
+                            </GridColumn>
+                            <GridColumn Field="@nameof(dtItem.ItemCode)" HeaderText="Item Code" TextAlign="TextAlign.Left" Width="50"></GridColumn>
+                            <GridColumn Field="@nameof(dtItem.ItemName)" HeaderText="Item Name" TextAlign="TextAlign.Left" Width="150"></GridColumn>
+                            <GridColumn Field="@nameof(dtItem.ItemNameAr)" HeaderText="Item Name(Arabic)" TextAlign="TextAlign.Right" Width="150"></GridColumn>
+                            <GridColumn Field="@nameof(dtItem.Parent)" HeaderText="Parent" TextAlign="TextAlign.Left" Width="30"></GridColumn>
+                        </GridColumns>
+                    </SfGrid>
+                  }
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row" style="padding-left:10px;padding-top:5px">
+        <div class="col-xl-12 col-md-12 col-lg-12">
+            <div class="table-responsive" style="position: relative; min-height: 550px; min-width: 300px">
+                @if (Isload == true)
+                {
+                    <div id="container">
+                        <div class="row">
+                            <div spin-row w-100>
+                                <div class="spin-row">
+                                    <div class="content">
+                                        <SfSpinner Size="40" Label="" Type="SpinnerType.Bootstrap4" Visible="Isload"></SfSpinner>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+
+                else
+                {
+                    <SfGrid GridLines="GridLine.Both" DataSource="@GridChild" @ref="@gvItem" Height="359" AllowPaging="true">
+                        <GridPageSettings PageSize="50"></GridPageSettings>
+                        <GridColumns>
+                            <GridColumn Width="15">
+                                <Template>
+                                    @{ var ID = (context as DtItemMaster).ID;
+                                        <a @onclick="@(async () => { await GetByIddelete(ID); })"><img src="Images/delete16_16.gif" style="height:20px;width:20px" /></a>
+                                    }
+                                </Template>
+                            </GridColumn>
+                            <GridColumn Width="15">
+                                <Template>
+                                    @{ var ID = (context as DtItemMaster).ID;
+                                        <a @onclick="@(async () => { await GetById(ID); })"><img src="Images/pencil1.png" style="height:20px;width:20px" /></a>
+                                    }
+                                </Template>
+                            </GridColumn>
+                            <GridColumn Width="16">
+                                <Template>
+                                    @{ var name = (context as DtItemMaster).FileName;
+                                        string _FilePath = string.Concat(url, name);
+                                        // string _FilePath = url + name;
+                                        <a @onclick="@(() => { popClick(_FilePath); })" title="@name" style="cursor:pointer;"><img src="@_FilePath" style="height:25px;width:25px" /></a>
+                                    }
+                                </Template>
+                            </GridColumn>
+                            <GridColumn Field="@nameof(dtItem.ItemCode)" HeaderText="Item Code" TextAlign="TextAlign.Left" Width="50"></GridColumn>
+                            <GridColumn Field="@nameof(dtItem.ItemName)" HeaderText="Item Name" TextAlign="TextAlign.Left" Width="150"></GridColumn>
+                            <GridColumn Field="@nameof(dtItem.ItemNameAr)" HeaderText="Item Name(Arabic)" TextAlign="TextAlign.Right" Width="150"></GridColumn>
+                            <GridColumn Field="@nameof(dtItem.Parent)" HeaderText="Parent" TextAlign="TextAlign.Left" Width="30"></GridColumn>
+                        </GridColumns>
+                    </SfGrid>
+                }
+              </div>
+        </div>
+    </div>
+}
+<SfDialog Width="700px" @bind-Visible="popPhoto" ShowCloseIcon="true">
+    <DialogTemplates>
+        <Header>
+        </Header>
+        <Content>
+            <div>
+                <img src="@popPath" style="height: 500px; width: 700px; cursor: pointer;" title="Photo" />
+            </div>
+        </Content>
+    </DialogTemplates>
+    <DialogAnimationSettings Effect="@DialogEffect.Zoom"></DialogAnimationSettings>
+</SfDialog>
+@code {
+    public bool Isload = true;
+    [Parameter]
+    public string id { get; set; }
+    int mode;
+    string UserName, UserID;
+
+
+    int MaxChildItemcode,MaxParentItemCode,icode;
+    public string Heading = "", state, filePath, Valid, filePubpath = "", filename = "", ButtonName = "Click Me", popPath,SPMSMasterPath,url;
+    public bool IsSave = false;
+    bool IsTaskRunning = false, popPhoto = false;
+
+    List<DtItemMaster> dtItemMasters = new List<DtItemMaster>();
+    List<DtItemMaster> GridMaster = new List<DtItemMaster>();
+    List<DtItemMaster> GridChild = new List<DtItemMaster>();
+    SfGrid<DtItemMaster> gvItem;
+    //SfUploader<DtItemMaster> UploaderObj;
+    public DtItemMaster dtItem = new DtItemMaster();
+    DtItemMaster Item = new DtItemMaster();
+    DtItemMaster Items = new DtItemMaster();
+    SfUploader UploaderObj;
+    public class Type { public string Name { get; set; } public string Id { get; set; } }
+    IEnumerable<string> Types = new List<string>() { "Parent", "Child" };
+    IEnumerable<DtItemMaster> NameItem = new List<DtItemMaster>();
+
+    public dtMastermisc miscpaths = new dtMastermisc();
+    dtMastermisc orderitem = new dtMastermisc();
+
+    private SfUploader UploderObj;
+    public MultipartFormDataContent content;
+    public HttpResponseMessage filepath { get; set; }
+    private object selectedFile { get; set; }
+    List<fileInfo> files = new List<fileInfo>();
+
+    //public List<Syncfusion.Blazor.Inputs.Internal.UploadFiles> selectedFiles;
+    List<fileInfo>Files= new List<fileInfo>();
+
+    public class fileInfo
+    {
+        public string Path { get; set; }
+        public string Name { get; set; }
+        public double Size { get; set; }
+    }
+
+
+    protected async override void OnInitialized()
+    {
+        UserName = await sessionStorage.GetItemAsync<string>("Username");
+        UserID = await sessionStorage.GetItemAsync<string>("LocalSessionUserId");
+        if (UserName == "" || UserName == null)
+        {
+            _nav.NavigateTo(_nav.BaseUri + "Login");
+
+        }
+        else
+        {
+            SPMSMasterPath = (await _ItemMasterManager.MiscImagePath());
+            int ID = Convert.ToInt32(id);
+            if (id == "0")
+            {
+
+
+                GridMaster = (await _ItemMasterManager.GetItemsByID(0)).ToList();
+                Isload = false;
+
+            }
+            else
+            {
+
+                GridChild = (await _ItemMasterManager.GetItemsByID(ID)).ToList();
+                Isload = false;
+
+            }
+            await loaddata();
+
+
+
+            //if (ID == 0)
+            //{
+
+            //    int MaxParentItemCode = (await _ItemMasterManager.GetMaxItemCode(0));
+            //    int icode = MaxParentItemCode + 1;
+            //    Item.ItemCode = icode.ToString();
+
+            //}
+            //else
+            //{
+            //    int MaxChildItemcode = (await _ItemMasterManager.GetMaxItemCode(ID));
+            //    int icode = MaxChildItemcode + 1;
+            //    Item.ItemCode = icode.ToString();
+            //}
+
+
+
+
+            //  dtItemMasters = (await _ItemMasterManager.GetItems()).ToList();
+            // GridMaster = (await _ItemMasterManager.GetItemsByID(0)).ToList();
+            //GridChild = (await _ItemMasterManager.GetItemsByID(ID)).ToList();
+            //NameItem = await _ItemMasterManager.GetItems();
+            url = (await _ItemMasterManager.MiscImageUrl());
+            await this.InvokeAsync(StateHasChanged);
+            //if (id == "0")
+            //{
+            //    Item.Type = " Parent";
+            //}
+            //else
+            //{
+            //    Item.Type = "Child";
+            //    Item.Parent = Convert.ToInt32(id);
+            //}
+
+
+
+
+        }
+
+    }
+
+
+    public async Task loaddata()
+    {
+        int ID = Convert.ToInt32(id);
+        if (id == "0")
+        {
+            mode = 0;
+            Heading = "Master Items";
+            MaxParentItemCode = (await _ItemMasterManager.GetMaxItemCode(0));
+
+
+            icode = MaxParentItemCode + 1;
+            Item.ItemCode = icode.ToString();
+
+
+            // GridMaster = (await _ItemMasterManager.GetItemsByID(0)).ToList();
+            Item.Type = " Parent";
+        }
+        else
+        {
+            Heading = "Sub Items"; mode = 3;
+
+            MaxChildItemcode = (await _ItemMasterManager.GetMaxItemCode(ID));
+            icode = MaxChildItemcode + 1;
+            Item.ItemCode = icode.ToString();
+
+            //GridChild = (await _ItemMasterManager.GetItemsByID(ID)).ToList();
+
+            Item.Type = "Child";
+            Item.Parent = Convert.ToInt32(id);
+        }
+    }
+
+
+
+
+    //public async Task onChange(UploadChangeEventArgs args)
+    //{
+    //    files = new List<fileInfo>();
+    //    //this.selectedFiles = args.Files;
+    //    foreach (var file in args.Files)
+    //    {
+    //        var pathToSave = Path.Combine(Directory.GetCurrentDirectory(), "Images");
+    //        var fullPath = Path.Combine(pathToSave, file.FileInfo.Name);
+    //        byte[] bytes = file.Stream.ToArray();
+    //        string base64 = Convert.ToBase64String(bytes);
+    //        files.Add(new fileInfo() { Path = @"data:image/" + file.FileInfo.Type + ";base64," + base64, Name = file.FileInfo.Name, Size = file.FileInfo.Size });
+    //        content = new MultipartFormDataContent {
+    //                { new ByteArrayContent(file.Stream.GetBuffer()), "\"upload\"", file.FileInfo.Name }
+    //            };
+    //        var a = $@"D:\Orison\OrisonPortal\OrisonSPMS\OrisonSparePartsImages\" + filename;
+    //        //    filepath = await Http.PostAsync("https://localhost:44395/api/SampleData/Save", content);
+    //          filepath = await Http.PostAsync( a, content);
+    //    }
+    //}
+
+
+    public void OnSuccess(SuccessEventArgs args)
+    {
+        var customHeader = args.Response.Headers.Split(new Char[] { '\n' })[1]; // To split the response header values
+        var key = customHeader.Split(new Char[] { ':' })[0]; // To get the key pair of provided custom data in header
+        var value = customHeader.Split(new Char[] { ':' })[1].Trim(); // To get the value for the key pair of provided custom data in header
+    }
+
+    public void OnFileSelected(SelectedEventArgs args)
+    {
+        if (Item.ItemName == null && Item.ItemCode == null)
+        {
+            Valid = "Please enter Document Details";
+
+            if (UploaderObj != null)
+            {
+                UploaderObj.ClearAllAsync();
+            }
+            return;
+        }
+        else
+        {
+            foreach (var file in args.FilesData)
+            {
+                var i = file.Id.Split(new Char[] { '_' })[1];
+
+                file.Name = Item.ItemCode;
+                string t = file.MimeContentType;
+                int pos = t.IndexOf("/");
+                if (pos >= 0)
+                {
+                    t = t.Remove(0, pos + 1);
+                    t = "." + t;
+                }
+                filename = file.Name + t;
+
+                if (filename == "" || filename == null)
+                {
+                    filename = file.Name + t;
+                    //filename = file.Name;
+                    ////  localStorage.SetItemAsync("filetype", file.Type);
+                    //sessionStorage.SetItemAsync("filetype", file.Type);
+                    //bool d = filename.Contains("." + file.Type);
+                    //if (d == false)
+                    //{
+                    //    filename = filename + "." + file.Type;
+
+                    //}
+                }
+                else
+                {
+                    filename = file.Name + t;
+                    //filename = file.Name;
+                    ////  localStorage.SetItemAsync("filetype", file.Type);
+                    //sessionStorage.SetItemAsync("filetype", file.Type);
+                    //bool d = filename.Contains("." + file.Type);
+                    //if (d == false)
+                    //{
+                    //    filename = filename + "." + file.Type;
+
+                    //}
+                }
+
+
+            }
+
+        }
+        args.IsModified = true;
+        args.ModifiedFilesData = args.FilesData;
+        Item.FileName = filename;
+        //live path
+        var path = SPMSMasterPath + filename;
+        //localpath
+        //  var path = $@"D:\Orison\OrisonPortal\OrisonSPMS\OrisonSparePartsImages\" + filename;
+        Item.Path = path;
+
+    }
+
+
+
+
+    private void ValueChangeHandler(ChangeEventArgs<string, DtItemMaster> args)
+    {
+        if (args.ItemData.Type == "Parent")
+        {
+            Item.Parent = args.ItemData.ID;
+        }
+        else
+        {
+            Item.Parent = args.ItemData.ID;
+        }
+    }
+
+    private async Task Save()
+    {
+        try
+        {
+            if (state == "Edit")
+            {
+                HttpResponseMessage response = await _ItemMasterManager.Update(Item);
+                if (response.IsSuccessStatusCode)
+                {
+                    IsSave = true;
+                    IsTaskRunning = true;
+                    ButtonName = "Disabled";
+                    StateHasChanged();
+                    Item.ItemCode = "";
+                    Item.ItemName = "";
+                    Item.ItemNameAr = "";
+
+                    //GridMaster = (await _ItemMasterManager.GetItemsByID(0)).ToList();
+                    //GridChild = (await _ItemMasterManager.GetItemsByID(Convert.ToInt32(id))).ToList();
+
+                }
+            }
+            else
+            {
+                Item.IsActive = 1;
+                HttpResponseMessage response = await _ItemMasterManager.Save(Item);
+                if (response.IsSuccessStatusCode)
+                {
+                    IsSave = true;
+                    IsTaskRunning = true;
+                    ButtonName = "Disabled";
+                    StateHasChanged();
+
+                    //GridMaster = (await _ItemMasterManager.GetItemsByID(0)).ToList();
+                    //GridChild = (await _ItemMasterManager.GetItemsByID(Convert.ToInt32(id))).ToList();
+
+                }
+            }
+            GridMaster = (await _ItemMasterManager.GetItemsByID(0)).ToList();
+            GridChild = (await _ItemMasterManager.GetItemsByID(Convert.ToInt32(id))).ToList();
+            gvItem.Refresh();
+            await UploaderObj.ClearAllAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+    }
+
+    public async Task AddNew()
+    {
+        loaddata();
+        Item = new DtItemMaster();
+        GridChild = new List<DtItemMaster>();
+        GridMaster = new List<DtItemMaster>();
+        //  _nav.NavigateTo(_nav.BaseUri + "AddNewSpareParts");
+
+
+        IsTaskRunning = false;
+
+
+        GridMaster = (await _ItemMasterManager.GetItemsByID(0)).ToList();
+        GridChild = (await _ItemMasterManager.GetItemsByID(Convert.ToInt32(id))).ToList();
+        gvItem.Refresh();
+
+    }
+
+    public void clear()
+    {
+        Item = new DtItemMaster();
+    }
+    public void popClick(string path)
+    {
+        popPath = path;
+        popPhoto = true;
+    }
+    private async Task GetById(int ID)
+    {
+        IsTaskRunning = false;
+
+
+        dtItemMasters = (await _ItemMasterManager.GetItems()).ToList();
+        Items = dtItemMasters.Where(a => a.ID == ID).FirstOrDefault();
+        Item.ID = Items.ID;
+        Item.ItemCode = Items.ItemCode;
+        Item.ItemName = Items.ItemName;
+        Item.ItemNameAr = Items.ItemNameAr;
+        Item.Path = Items.Path;
+        Item.FileName = Items.FileName;
+        state = "Edit";
+    }
+
+    private async Task GetByIddelete(int ID)
+    {
+
+
+        HttpResponseMessage response = await _ItemMasterManager.deleteitems(ID);
+        GridMaster = (await _ItemMasterManager.GetItemsByID(0)).ToList();
+        GridChild = (await _ItemMasterManager.GetItemsByID(Convert.ToInt32(id))).ToList();
+        gvItem.Refresh();
+
+    }
+
+
+
+
+    private void GoToMaster()
+    {
+        _nav.NavigateTo(_nav.BaseUri + "SparePartsRegister");
+    }
+
+}

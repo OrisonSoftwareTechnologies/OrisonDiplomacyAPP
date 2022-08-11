@@ -1,0 +1,45 @@
+﻿@page "/Index"
+@page "/Index/{Id}/"
+@using AdminDiplomacyAPP.Entities;
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+@inject NavigationManager NavigationManager
+
+
+@code{
+    [Parameter]
+    public string ID { get; set; }
+
+
+    int user, BranchID, AccountID, RID;
+    string Category;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        BranchID = await sessionStorage.GetItemAsync<int>("BranchID");
+        user = await sessionStorage.GetItemAsync<int>("LocalSessionUserId");
+        Category = await sessionStorage.GetItemAsync<string>("Category");
+        if (user == 0)
+        {
+            NavigationManager.NavigateTo("Login");
+        }
+        else
+        {
+           
+                if (Category == "Administrator")
+                {
+                    NavigationManager.NavigateTo("JobRegister");
+                }
+                else
+                {
+                    NavigationManager.NavigateTo("JobRegister");
+                }
+          
+
+
+        }
+
+
+
+    }
+}

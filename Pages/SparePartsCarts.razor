@@ -1,0 +1,239 @@
+﻿@page "/SparePartsCarts"
+@using Syncfusion.Blazor.Buttons;
+@using BlazorStrap;
+@using AdminDiplomacyAPP.Entities
+@using Syncfusion.Blazor.Inputs;
+@using Syncfusion.Blazor.Grids;
+@using Syncfusion.Blazor.Popups;
+@using Syncfusion.Blazor.DropDowns;
+@using System.IO;
+@using Syncfusion.Blazor.Data
+@using Syncfusion.Blazor.Calendars
+@using Syncfusion.Blazor.Spinner
+@inject IJSRuntime JSRuntime;
+@inject AdminDiplomacyAPP.Contract.IOrderingCartManager _OrderingCartManager
+@inject AdminDiplomacyAPP.Contract.IItemMasterManager _ItemMasterManager
+@inject NavigationManager _nav
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+<head>
+    <link href="css/OrisonSyncfusionStyles.css" rel="stylesheet" />
+
+</head>
+<style>
+    .e-btnss {
+        width: 8em;
+        height: 30px;
+        display: inline;
+        background-position: center bottom;
+        font-size: 16px;
+        vertical-align: middle;
+        color: black;
+    }
+</style>
+
+<div class="row" style=" border-bottom: solid 1px #000; padding-bottom: 8px; padding-top: 4px;">
+    <div class="col-md-6">
+        <SfButton IconCss="Icon order" CssClass="e-btn" @onclick="@AddtoOrderPOPup" disabled=@IsTaskRunning Content="Order" />
+    </div>
+    <div class="col-md-6" style="text-align:right">
+        <label style="color: #014164; font-size: large; display: flex; justify-content: right; font-weight: bold; "> Register</label>
+    </div>
+</div>
+<div class="pt-2">
+    <div class="row pt-1" style="padding-left:10px;padding-top:5px">
+        <div class="col-xl-12 col-md-12 col-lg-12">
+            <div class="table-responsive" style="position: relative; min-height: 550px; min-width: 300px">
+                @if (Isload == true)
+                {
+                    <div id="container">
+                        <div class="row">
+                            <div spin-row w-100>
+                                <div class="spin-row">
+                                    <div class="content">
+                                        <SfSpinner Size="40" Label="" Type="SpinnerType.Bootstrap4" Visible="Isload"></SfSpinner>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <SfGrid GridLines="GridLine.Both" DataSource="@DtCarts" Height="450" @ref="@userGrid" RowHeight="24" AllowPaging="true" AllowFiltering="true" AllowSelection="true">
+                        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" ShowFilterBarStatus="true"></GridFilterSettings>
+                        <GridPageSettings PageSize="20"></GridPageSettings>
+                        <GridSelectionSettings Type="Syncfusion.Blazor.Grids.SelectionType.Multiple"></GridSelectionSettings>
+                        <GridEvents RowSelected="GetSelectedRecords" TValue="SPMS_OrderingCart"></GridEvents>
+                        <GridColumns>
+                            <GridColumn Type="ColumnType.CheckBox" Width="10"></GridColumn>
+                            <GridColumn Field="@nameof(dtcarts.ID)" HeaderText="ID" TextAlign="TextAlign.Left" Visible="false" Width="35"></GridColumn>
+                            <GridColumn Field="@nameof(dtcarts.OrderNo)" HeaderText="Cart No" TextAlign="TextAlign.Left" Width="50"></GridColumn>
+                            <GridColumn Field="@nameof(dtcarts.Orientation)" HeaderText="Orientation" TextAlign="TextAlign.Left" Width="60"></GridColumn>
+                            <GridColumn Field="@nameof(dtcarts.Qty)" HeaderText="Qty" TextAlign="TextAlign.Left" Width="30"></GridColumn>
+                            <GridColumn Field="@nameof(dtcarts.JobNo)" HeaderText="Job No" TextAlign="TextAlign.Left" Width="50"></GridColumn>
+                            <GridColumn Field="@nameof(dtcarts.Date)" Format="dd/MM/yyyy" HeaderText="Date" TextAlign="TextAlign.Left" Width="60"></GridColumn>
+                        </GridColumns>
+                    </SfGrid>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+<SfDialog Width="650px" ShowCloseIcon="true" IsModal="true" @bind-Visible="@IsVisible">
+    <DialogTemplates>
+        <Header>
+            <div class="col-md-4">
+                <BSAlert Color="Color.Success" @bind-IsOpen="@IsOrderSave" AutoHide="true">
+                    Ordered Successfully  <a><i class="fa fa-check" aria-hidden="true"></i></a>
+                </BSAlert>
+            </div>
+        </Header>
+        <Content>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="label">Order No:</label>
+                    <SfTextBox Placeholder="Order No" @bind-value="@dtorder.OrderNo" EnableRtl="false" Readonly="true"></SfTextBox>
+                </div>
+                <div class="col-md-6">
+                    <label class="label">Date:</label>
+                    <SfDatePicker TValue="DateTime?" Format="dd/MM/yyyy" @bind-Value="@dtorder.Date" Placeholder='Date'></SfDatePicker>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="label">Staff:</label>
+                    <SfComboBox TValue="string" TItem="dtAccounts" Placeholder="Select Staff" DataSource="comboStaff" @bind-Value="@dtorder.Staff">
+                        <ComboBoxEvents TValue="string" ValueChange="ValueChangeHandler1" TItem="dtAccounts"></ComboBoxEvents>
+                        <ComboBoxFieldSettings Text="AccountName" Value="AccountName"></ComboBoxFieldSettings>
+                    </SfComboBox>
+                </div>
+                <div class="col-md-6">
+                    <label class="label">Department:</label>
+                    <SfComboBox TValue="string" TItem="dtMastermisc" Placeholder="Select Department" DataSource="comboDepartment" @bind-Value="@dtorder.Department">
+                        <ComboBoxEvents TValue="string" ValueChange="ValueChangeHandler3" TItem="dtMastermisc"></ComboBoxEvents>
+                        <ComboBoxFieldSettings Text="Description" Value="Description"></ComboBoxFieldSettings>
+                    </SfComboBox>
+                </div>
+            </div>
+           
+            <br>
+            <div class="row" style=" border-top: inset 1px; padding-bottom: 8px; padding-top: 4px;" align="right">
+                <div class="col-md-12">
+                    <SfButton IconCss="Icon order" CssClass="e-btnss" @onclick="@AddtoOrder" Disabled=@IsOrder Content="Order" />
+                    <SfButton IconCss="Icon order" CssClass="e-btnss" @onclick="@GoToOrder" Content="Go To Order" />
+                    <SfButton IconCss="Icon cancel" CssClass="e-btnss" @onclick="@CancelOrder" Content="Close" />
+                </div>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    public bool IsVisible = false, IsOrder = false, IsOrderSave = false, Isload = true, IsTaskRunning = false;
+    string UserName, UserID, maxOrderNo, SelectedValue;
+    public List<double> SelectedRowIndexes { get; set; }
+    public double[] TotalValue { get; set; }
+    public DateTime? DateValue { get; set; } = DateTime.Today;
+    public SfGrid<SPMS_OrderingCart> userGrid { get; set; }
+    List<SPMS_OrderingCart> DtCarts = new List<SPMS_OrderingCart>();
+    public SPMS_OrderingCart dtcarts = new SPMS_OrderingCart();
+    SPMS_Ordering orderitem = new SPMS_Ordering();
+    SPMS_Orders dtorder = new SPMS_Orders();
+    public SPMS_OrderingCart carts = new SPMS_OrderingCart();
+    List<SPMS_OrderingCart> GridRowData = new List<SPMS_OrderingCart>();
+    List<dtMastermisc> comboDepartment = new List<dtMastermisc>();
+    List<dtAccounts> comboStaff = new List<dtAccounts>();
+    public class Orientation
+    {
+        public string Name { get; set; }
+        public string Id { get; set; }
+    }
+    List<string> status = new List<string>(){ "Pending","Delivered","Cancelled"};
+
+    protected override async Task OnInitializedAsync()
+    {
+        UserName = await sessionStorage.GetItemAsync<string>("Username");
+        UserID = await sessionStorage.GetItemAsync<string>("LocalSessionUserId");
+        if (UserName == "" || UserName == null)
+        {
+            _nav.NavigateTo(_nav.BaseUri + "Login");
+        }
+        else
+        {
+            comboStaff = (await _ItemMasterManager.getComboStaff()).ToList();
+            comboDepartment = (await _ItemMasterManager.getComboDepartment()).ToList();
+            DtCarts = (await _OrderingCartManager.GetCarts()).ToList();
+            Isload = false;
+        }
+    }
+    public async Task GetSelectedRecords(RowSelectEventArgs<SPMS_OrderingCart> args)
+    {
+        GridRowData = await this.userGrid.GetSelectedRecordsAsync();
+    }
+    private void ValueChangeHandler1(ChangeEventArgs<string, dtAccounts> args)
+    {
+        dtorder.Staff = args.Value;
+    }
+    private void ValueChangeHandler3(ChangeEventArgs<string, dtMastermisc> args)
+    {
+        dtorder.Department = args.Value;
+    }
+    public async Task AddtoOrderPOPup()
+    {
+        if (GridRowData.Count != 0)
+        {
+            maxOrderNo = (await _ItemMasterManager.GetMaxOrderNo());
+            int maxorder = Convert.ToInt32(maxOrderNo);
+            int maxOrdr = maxorder + 1;
+            dtorder.OrderNo = Convert.ToString(maxOrdr);
+            dtorder.Date = DateTime.Today;
+            IsOrder = false;
+            this.IsVisible = true;
+        }
+    }
+    public async Task AddtoOrder()
+    {
+        SPMS_OrderingCart dtdelete = new SPMS_OrderingCart();
+        NewCartToOrder dt = new NewCartToOrder();
+        dtorder.MDate = DateTime.Now;
+        dtorder.CDate = DateTime.Now;
+        dtorder.CUser = Convert.ToInt32(UserID);
+        dtorder.IsActive = 1;
+        dt.NewOrdersChildentry = new List<SPMS_OrdersChild>();
+        dt.DeleteOldCartitem = new List<SPMS_OrderingCart>();
+        foreach (var res in GridRowData)
+        {
+            SPMS_OrderingCart dtcartdelete = new SPMS_OrderingCart();
+            SPMS_OrdersChild dtorderchild = new SPMS_OrdersChild();
+            dtorderchild.ItemCode = res.ItemCode;
+            dtorderchild.ItemName = res.ItemName;
+            dtorderchild.ItemID = res.ItemID;
+            dtorderchild.Qty = res.Qty;
+            dtorderchild.Orientation = res.Orientation;
+            dtcartdelete.ID = res.ID;
+            dt.DeleteOldCartitem.Add(dtcartdelete);
+            dt.NewOrdersChildentry.Add(dtorderchild);
+            dtorder.JobNo = res.JobNo;
+        }
+        dt.NewOrdersentry = dtorder;
+        HttpResponseMessage response = await _ItemMasterManager.SaveCartToOrder(dt);
+        if (response.IsSuccessStatusCode)
+        {
+            IsOrder = true;
+            IsOrderSave = true;
+            DtCarts = (await _OrderingCartManager.GetCarts()).ToList();
+            await userGrid.Refresh();
+            dtorder.Staff = "";
+            dtorder.Status = "";
+            dtorder.Department = "";
+        }
+    }
+    private async Task GoToOrder()
+    {
+        _nav.NavigateTo(_nav.BaseUri + "SparePartsOrders");
+    }
+    private async Task CancelOrder()
+    {
+        IsVisible = false;
+    }
+}

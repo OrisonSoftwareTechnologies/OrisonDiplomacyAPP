@@ -1,0 +1,319 @@
+﻿@page "/"
+@page "/Login"
+@layout LoginLayout
+@using System.Data
+@using Microsoft.AspNetCore.Http
+@using System.Net.Http
+@using Syncfusion.Blazor.SplitButtons
+@using AdminDiplomacyAPP.Entities
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+@inject AdminDiplomacyAPP.Services.AccountService accService
+@inject AdminDiplomacyAPP.Contract.ILogin _login
+@inject HttpClient Http
+@inject NavigationManager _nav
+
+
+<style>
+    .login {
+        position: relative;
+        z-index: 1;
+        background: #ffffff;
+        max-width: 550px;
+        margin: 0 auto 80px;
+        padding: 45px;
+        text-align: center;
+        box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.3), 0 5px 5px 0 rgba(0, 0, 0, 0.19);
+        transition-duration: 0.3s;
+        border-radius: 6px;
+    }
+
+    .loginParent {
+        max-width: 400px;
+        padding: 8% 0 0;
+        margin: auto;
+    }
+
+    .login:hover {
+        box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.7), 0 5px 5px 0 rgba(0, 0, 0, 0.27);
+    }
+
+    .button {
+        width: 100%;
+        background-color: #c01829;
+        border: none;
+        color: white;
+        padding: 8px 30px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 15px;
+        border-radius: 9px;
+        cursor: pointer;
+        -webkit-transition-duration: 0.4s;
+        transition-duration: 0.4s;
+    }
+
+    .button2:hover {
+        box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24),0 17px 50px 0 rgba(0,0,0,0.19);
+    }
+
+    .textBox {
+        width: 100%;
+        padding: 7px 20px;
+        display: inline-block;
+        border: 1.1px solid #ccc;
+        border-radius: 10px;
+        box-sizing: border-box;
+        background-color: #e7eef4;
+    }
+
+        .textBox:hover {
+            background-color: #f5f4f4;
+        }
+
+    #progress-button-control {
+        width: 100%;
+        margin: 8% 0;
+        text-align: center;
+    }
+
+    @@media only screen and (max-width: 500px) {
+        #progress-button-control {
+            margin-left: -11%;
+        }
+    }
+
+    .progress-button-section {
+        width: 80%;
+        margin: auto;
+    }
+
+    #progress-button-control .col-xs-12 {
+        margin: 18px 0;
+    }
+
+    #contract.e-progress-active .e-btn-content {
+        display: none;
+    }
+
+    #contract {
+        transition: all .3s cubic-bezier(.175, .885, .32, 1) 100ms;
+    }
+
+    @@font-face {
+        font-family: 'button-icons';
+        src: url(data:application/x-font-ttf;charset=utf-8;base64,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) format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }
+
+    .e-btn-sb-icons {
+        font-family: 'button-icons';
+        line-height: 1;
+        font-style: normal;
+        font-weight: normal;
+        font-variant: normal;
+        text-transform: none;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    .e-play-icon::before {
+        content: '\e701';
+        font-size: 12px;
+    }
+
+    .e-bigger .e-play-icon::before {
+        font-size: 14px;
+    }
+
+    .e-download-icon::before {
+        content: '\e702';
+    }
+
+    .e-round .e-play-icon {
+        margin-top: -2px;
+    }
+
+    .bootstrap4 .e-round .e-play-icon {
+        margin-top: 0;
+        margin-left: 2px;
+    }
+
+    .material .e-round .e-play-icon {
+        margin-top: 0;
+    }
+
+    .e-btn.e-success, .e-css.e-btn.e-success {
+        background-color: #04396d;
+        border-color: #04396d;
+        color: #fff;
+    }
+
+        .e-btn.e-success:focus, .e-css.e-btn.e-success:focus {
+            background-color: #04396d;
+            border-color: #04396d;
+            color: #fff;
+            box-shadow: 0 0 0 4px rgb(100 60 153 / 50%);
+        }
+
+        .e-btn.e-success:hover, .e-css.e-btn.e-success:hover {
+            background-color: #04396d;
+            border-color: #04396d;
+            box-shadow: none;
+            color: #fff;
+        }
+
+    .e-btn.e-success, .e-css.e-btn.e-success {
+        background-color: #04396d;
+        border-color: #04396d;
+        color: #fff;
+        width: 120px;
+        height: 32px;
+    }
+
+    .errmsg label {
+        display: block;
+        text-align: center;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="loginParent">
+        <div class="login">
+            <div class="form-group" style="text-align: Center">
+                <img src="Images/Orison_Logo_New.png" width="140" height="140" />
+            </div>
+            <div class="form-group" style="text-align: Center;font-weight: bold;">
+                <label style="color: #04396d; font-size: medium;">Orison SPMS</label>
+            </div>
+            <div class="form-group" style="padding-top:1%;">
+                <input type="text" placeholder="UserName" @bind-value="@users.UserName" class="textBox" />
+                <small style="color:red">@UsernameSmall</small>
+            </div>
+            <div class="form-group" style="padding-top:1%;">
+                <input type="password" placeholder="Password" @bind-value="@users.Password" class="textBox" />
+                <small style="color:red">@PasswordSmall</small>
+            </div>
+            <div class="form-group" style="padding-top:1%;">
+                <SfProgressButton ID="contract" Content="Login" EnableProgress="true" OnClick="@LoginSalesman" CssClass="@cssClass">
+                    <ProgressButtonEvents OnBegin="contractBegin" OnEnd="contractEnd"></ProgressButtonEvents>
+                </SfProgressButton>
+            </div>
+
+            <div class="errmsg">
+                <label>@msg</label>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="container-fluid text-center" style="color:black;padding-left:0;margin:0;padding-right:0px;">
+
+    <span style="color:black;text-align:center">
+        <p style="color:black;text-align: center">Powered By <img src="Images/BackgroundOrisonLogo.png" id="img2" alt="logo" style="width:30px;height:28px" /><a href="https://www.hirasolutions.com" title=""> Orison</a></p>
+    </span>
+</footer>
+@code{
+
+    string user, pwd, UserName, Password, msg;
+    public bool Isload = false;
+    private string cssClass = "e-success e-small";
+    private string UsernameValidCss = "", UsernameSmall = "";
+    private string PasswordValidCss = "", PasswordSmall = "";
+    public loginModel userLogin = new loginModel();
+    //IEnumerable<loginModel> userLogin = new List<loginModel>();
+
+    loginModel users = new loginModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        user = await sessionStorage.GetItemAsync<string>("Username");
+
+        pwd = await sessionStorage.GetItemAsync<string>("Password");
+
+        users.UserName = user;
+
+    }
+    private void contractBegin(Syncfusion.Blazor.SplitButtons.ProgressEventArgs args)
+    {
+        cssClass = "e-success e-small e-round";
+    }
+    private void contractEnd(Syncfusion.Blazor.SplitButtons.ProgressEventArgs args)
+    {
+        cssClass = "e-success e-small";
+    }
+    protected async Task LoginSalesman()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(UserName))
+            {
+                UsernameValidCss = "e-error";
+            }
+            else
+            {
+                UsernameValidCss = "e-success";
+            }
+            if (string.IsNullOrWhiteSpace(Password))
+            {
+                PasswordValidCss = "e-error";
+            }
+            else
+            {
+                PasswordValidCss = "e-success";
+            }
+
+            users.Password = accService.PasswordEncode(users.Password);
+            userLogin = await _login.GetUser(users.UserName, users.Password);
+
+
+
+            //if (userLogin.Count() == 0)
+            //{
+            //    msg = "Failed to Login";
+            //    //IsOpenFail = true;
+            //}
+            //else
+            //{
+
+            //    //  IsOpenSuccess = true;
+            //    await sessionStorage.SetItemAsync("ID", userLogin.First().ID);
+            //    await sessionStorage.SetItemAsync("Username", userLogin.First().Username);
+            //    await sessionStorage.SetItemAsync("Password", userLogin.First().Password);
+            //    await sessionStorage.SetItemAsync("LocalSessionUserId", userLogin.First().ID);
+            //    await sessionStorage.SetItemAsync("AccountID", userLogin.First().Accountid);
+            //    await sessionStorage.SetItemAsync("Category", userLogin.First().Category);
+            //    await sessionStorage.SetItemAsync("BranchID", 31);
+            //    //Isload = false;
+
+            //    NavigationManager.NavigateTo("Index");
+            //}
+
+            if (userLogin.UserName != null)
+            {
+                await sessionStorage.SetItemAsync("ID", userLogin.ID);
+                await sessionStorage.SetItemAsync("Username", userLogin.UserName);
+                await sessionStorage.SetItemAsync("Password", userLogin.Password);
+
+                await sessionStorage.SetItemAsync("LocalSessionUserId", userLogin.ID);
+                await sessionStorage.SetItemAsync("useraccountid", userLogin.AccountID);
+                await sessionStorage.SetItemAsync("usercategory", userLogin.Category);
+                _nav.NavigateTo("JobRegister");
+         
+
+            }
+            else
+            {
+                msg = "Invalid User";
+            }
+        }
+        catch (Exception ex)
+        {
+
+        }
+    }
+
+
+}

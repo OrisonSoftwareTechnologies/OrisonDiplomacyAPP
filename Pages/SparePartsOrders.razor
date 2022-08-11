@@ -1,0 +1,290 @@
+﻿@page "/SparePartsOrders"
+@using Syncfusion.Blazor.Buttons;
+@using BlazorStrap;
+@using AdminDiplomacyAPP.Entities
+@using Syncfusion.Blazor.Inputs;
+@using Syncfusion.Blazor.Grids;
+@using Syncfusion.Blazor.Popups;
+@using Syncfusion.Blazor.DropDowns;
+@using System.IO;
+@using Syncfusion.Blazor.Data
+@using Syncfusion.Blazor.Calendars
+@using Syncfusion.Blazor.Spinner
+@inject IJSRuntime JSRuntime
+@inject AdminDiplomacyAPP.Contract.IItemMasterManager _ItemMasterManager
+@inject NavigationManager _nav
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+<head>
+    <link href="css/OrisonSyncfusionStyles.css" rel="stylesheet" />
+</head>
+<div class="row" style=" border-bottom: solid 1px #000; padding-bottom: 8px; padding-top: 4px;">
+    <div class="col-md-12" style="text-align:right">
+        <label style="color: #014164; font-size: large; display: flex; justify-content: right; font-weight: bold; ">Order Register</label>
+    </div>
+</div>
+<div class="pt-2">
+    <div class="row pt-1" style="padding-left:10px;padding-top:5px">
+        <div class="col-xl-12 col-md-12 col-lg-12">
+            <div class="table-responsive" style="position: relative; min-height: 550px; min-width: 300px">
+                @if (Isload == true)
+                {
+                    <div id="container">
+                        <div class="row">
+                            <div spin-row w-100>
+                                <div class="spin-row">
+                                    <div class="content">
+                                        <SfSpinner Size="40" Label="" Type="SpinnerType.Bootstrap4" Visible="Isload"></SfSpinner>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <SfGrid GridLines="GridLine.Both" DataSource="@Dtorders" Height="450" RowHeight="27" AllowPaging="true" AllowFiltering="true">
+                        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" ShowFilterBarStatus="true"></GridFilterSettings>
+                        <GridPageSettings PageSize="50"></GridPageSettings>
+                        <GridTemplates>
+                            <DetailTemplate>
+                                @{
+                                    var employee = (context as SPMS_Orders);
+                                    <SfGrid GridLines="GridLine.Both" @ref=Grid[(int)employee.ID] Query="@(new Query().Where("Oid", "equal", employee.ID))" DataSource="@Dtchildorders" Height="150"  Width="800px" AllowPaging="false" AllowFiltering="true">
+                                        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" ShowFilterBarStatus="true"></GridFilterSettings>
+                                        <GridPageSettings PageSize="50"></GridPageSettings>
+                                        <GridColumns>
+                                            <GridColumn Width="10">
+                                                <Template Context="abcd">
+
+                                                    @{ var name = (abcd as SPMS_OrdersChildGrid).FileName;
+                                                        string _FilePath = string.Concat(url, name);
+
+                                                        <a @onclick="@(() => { popClick(_FilePath); })" title="@name" style="cursor:pointer;">
+                                                            <img src="@_FilePath" style="height:25px;width:25px" />
+                                                        </a>
+                                                    }
+
+                                                </Template>
+                                            </GridColumn>
+                                            <GridColumn Field="@nameof(dtorderchild.ItemID)" HeaderText="ItemID" TextAlign="TextAlign.Left" Width="30"></GridColumn>
+                                            <GridColumn Field="@nameof(dtorderchild.ItemCode)" HeaderText="ItemCode" TextAlign="TextAlign.Left" Width="40"></GridColumn>
+                                            <GridColumn Field="@nameof(dtorderchild.ItemName)" HeaderText="ItemName" TextAlign="TextAlign.Left" Width="50"></GridColumn>
+                                            <GridColumn Field="@nameof(dtorderchild.Orientation)" HeaderText="Orientation" TextAlign="TextAlign.Left" Width="30"></GridColumn>
+                                            <GridColumn Field="@nameof(dtorderchild.Qty)" HeaderText="Qty" TextAlign="TextAlign.Left" Width="15"></GridColumn>
+                                        </GridColumns>
+                                    </SfGrid>
+                                }
+                            </DetailTemplate>
+                        </GridTemplates>
+                        <GridColumns>
+                            <GridColumn Field="@nameof(dtorder.OrderNo)" HeaderText="OrderNo" TextAlign="TextAlign.Left" Width="50"></GridColumn>
+                            <GridColumn Field="@nameof(dtorder.JobNo)" HeaderText="Job No" TextAlign="TextAlign.Left" Width="50"></GridColumn>
+                            <GridColumn Field="@nameof(dtorder.Date)" Format="dd/MM/yyyy" HeaderText="Date" TextAlign="TextAlign.Left" Width="60"></GridColumn>
+                        </GridColumns>
+                    </SfGrid>
+                }
+                <SfDialog Width="650px" ShowCloseIcon="true" IsModal="true" @bind-Visible="@IsVisible">
+                    <DialogTemplates>
+                        <Header>
+                            <div class="col-md-4">
+                                <BSAlert Color="Color.Success" @bind-IsOpen="@IsOrderUpdate" AutoHide="true">
+                                    Successfully Updated  <a><i class="fa fa-check" aria-hidden="true"></i></a>
+                                </BSAlert>
+                            </div>
+                        </Header>
+                        <Content>
+                            <div class="form-row pt-2">
+                                <div class="col-md-6">
+                                    <img src="@OrderUrl" width="250" height="150" align="left" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label style="font-size:20px;text-align:center">@ename</label>
+                                </div>
+                                <div class="col-md-3">
+                                    <label style="font-size:20px;text-align:center">@arname</label>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="label">Orientation:</label>
+                                    <SfComboBox DataSource="@ore" Placeholder="Select" TValue="string" TItem="string" @bind-Value="orditem.Orientation">
+                                        <ComboBoxEvents TValue="string" TItem="string"></ComboBoxEvents>
+                                    </SfComboBox>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="label">Quantity:</label>
+                                    <SfNumericTextBox TValue="int" @bind-Value="@Qty" Min="1"></SfNumericTextBox>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="label">Staffs:</label>
+                                    <SfComboBox TValue="string" TItem="dtAccounts" Placeholder="Select Staff" DataSource="comboStaff" @bind-Value="@orditem.Staff">
+                                        <ComboBoxEvents TValue="string" ValueChange="ValueChangeHandler1" TItem="dtAccounts"></ComboBoxEvents>
+                                        <ComboBoxFieldSettings Text="AccountName" Value="AccountName"></ComboBoxFieldSettings>
+                                    </SfComboBox>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="label">Department:</label>
+                                    <SfComboBox TValue="string" TItem="dtMastermisc" Placeholder="Select Department" DataSource="comboDepartment" @bind-Value="@orditem.Department">
+                                        <ComboBoxEvents TValue="string" ValueChange="ValueChangeHandler3" TItem="dtMastermisc"></ComboBoxEvents>
+                                        <ComboBoxFieldSettings Text="Description" Value="Description"></ComboBoxFieldSettings>
+                                    </SfComboBox>
+                                </div>
+                            </div>
+                            <br>
+                            <div class="row" style=" border-top: inset 1px; padding-bottom: 8px; padding-top: 4px;" align="right">
+                                <div class="col-md-12">
+                                    <SfButton IconCss="Icon save" align="right" CssClass="e-btn" @onclick="@UpdateOrder" disabled=@IsTaskRunning Content="Update" />
+                                    <SfButton IconCss="Icon cancel" align="right" CssClass="e-btn" @onclick="@CancelOrder" Content="Close" />
+                                </div>
+                            </div>
+                        </Content>
+                    </DialogTemplates>
+                </SfDialog>
+            </div>
+        </div>
+    </div>
+</div>
+<SfDialog Width="550px" @bind-Visible="popPhoto" ShowCloseIcon="true">
+    <DialogTemplates>
+        <Header>
+        </Header>
+        <Content>
+            <div>
+                <img src="@popPath" style="height: 300px; width: 500px; cursor: pointer;" title="Photo" />
+            </div>
+        </Content>
+    </DialogTemplates>
+    <DialogAnimationSettings Effect="@DialogEffect.Zoom"></DialogAnimationSettings>
+</SfDialog>
+
+
+@code {
+    Dictionary<int?, SfGrid<SPMS_OrdersChildGrid>> Grid = new Dictionary<int?, SfGrid<SPMS_OrdersChildGrid>>();
+    public bool Isload = true, IsOrderUpdate = false, IsTaskRunning = false, popPhoto = false;
+    int Qty, NumericValue;
+    string UserName, UserID, ename, arname, fname, url, OrderUrl, ButtonName = "Click Me", popPath;
+    private bool IsVisible { get; set; } = false;
+    public SPMS_Orders dtorder = new SPMS_Orders();
+    public SPMS_OrdersChild dtorderchild = new SPMS_OrdersChild();
+    SPMS_Ordering orditem = new SPMS_Ordering();
+    public Query query = new Query().Take(10).RequiresCount();
+    public DateTime? DateValue { get; set; } = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 10);
+    List<SPMS_Orders> Dtorders = new List<SPMS_Orders>();
+    List<SPMS_OrdersChildGrid> Dtchildorders = new List<SPMS_OrdersChildGrid>();
+    List<dtMastermisc> comboStatus = new List<dtMastermisc>();
+    List<dtMastermisc> comboDepartment = new List<dtMastermisc>();
+    List<dtAccounts> comboStaff = new List<dtAccounts>();
+    List<dtVoucher> comboJob = new List<dtVoucher>();
+    List<DtItemMaster> dtItemMasters = new List<DtItemMaster>();
+    public class Orientation
+    {
+        public string Name { get; set; }
+        public string Id { get; set; }
+    }
+    IEnumerable<string> ore = new List<string>() { "Left", "Right", "Front", "Rear" };
+    protected override async Task OnInitializedAsync()
+    {
+        UserName = await sessionStorage.GetItemAsync<string>("Username");
+        UserID = await sessionStorage.GetItemAsync<string>("LocalSessionUserId");
+        if (UserName == "" || UserName == null)
+        {
+            _nav.NavigateTo(_nav.BaseUri + "Login");
+        }
+        else
+        {
+            Dtorders = (await _ItemMasterManager.GetOrders()).ToList();
+            Isload = false;
+            comboStaff = (await _ItemMasterManager.getComboStaff()).ToList();
+            comboDepartment = (await _ItemMasterManager.getComboDepartment()).ToList();
+            comboJob = (await _ItemMasterManager.getComboJob()).ToList();
+            dtItemMasters = (await _ItemMasterManager.GetItems()).ToList();
+            url = (await _ItemMasterManager.MiscImageUrl());
+            Dtchildorders = (await _ItemMasterManager.GetOrdersChild()).ToList();
+        }
+    }
+    private void GoToMaster()
+    {
+        _nav.NavigateTo(_nav.BaseUri + "SparePartsRegister");
+    }
+    private async Task Childgrid(int ID)
+    {
+        //Dtchildorders=(await _ItemMasterManager.GetOrdersChild(ID)).ToList();
+    }
+    private async Task OrderGetById(int ID)
+    {
+        IsTaskRunning = false;
+        // orditem = Dtorders.Where(a => a.ID == ID).FirstOrDefault();
+        Qty = Convert.ToInt32(orditem.Qty);
+        for (int i = 0; i < dtItemMasters.Count; i++)
+        {
+            if (dtItemMasters[i].ID == orditem.ItemID)
+            {
+                ename = dtItemMasters[i].ItemName;
+                arname = dtItemMasters[i].ItemNameAr;
+                fname = dtItemMasters[i].FileName;
+                OrderUrl = url + fname;
+
+            }
+
+
+        }
+        this.IsVisible = false;
+    }
+
+    private void ValueChangeHandler1(ChangeEventArgs<string, dtAccounts> args)
+    {
+        orditem.Staff = args.Value;
+    }
+    private void ValueChangeHandler2(ChangeEventArgs<string, dtMastermisc> args)
+    {
+        orditem.Status = args.Value;
+    }
+    private void ValueChangeHandler3(ChangeEventArgs<string, dtMastermisc> args)
+    {
+        orditem.Department = args.Value;
+    }
+    private void ValueChangeHandler4(ChangeEventArgs<string, dtVoucher> args)
+    {
+        orditem.JobNo = args.ItemData.VNo;
+
+    }
+    public void popClick(string path)
+    {
+        popPath = path;
+        popPhoto = true;
+    }
+
+
+    private async Task UpdateOrder()
+    {
+        try
+        {
+            orditem.MUser = UserID;
+            orditem.MDate = DateTime.Now;
+            orditem.Qty = Convert.ToString(Qty);
+            HttpResponseMessage response = await _ItemMasterManager.UpdateOrder(orditem);
+            if (response.IsSuccessStatusCode)
+            {
+                IsOrderUpdate = true;
+                IsTaskRunning = true;
+
+                StateHasChanged();
+            }
+
+            Dtorders = (await _ItemMasterManager.GetOrders()).ToList();
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+    }
+    private async Task CancelOrder()
+    {
+        IsVisible = false;
+    }
+
+}
